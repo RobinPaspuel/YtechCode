@@ -1,3 +1,4 @@
+from error_with_arrows import *
 ###################################
 DIGITS = '0123456789'
 ###################################
@@ -13,11 +14,16 @@ class Error:
     def error_string(self):
         result = f'{self.error_class}: {self.details}'
         result += f'File {self.initial_pos.filename} at line: {self.initial_pos.line + 1}'
+        result += '\n\n' + string_with_arrows(self.initial_pos.filetext, self.initial_pos, self.final_pos)
         return result
 
 class IllegalCharacter(Error):
     def __init__(self,initial_pos, final_pos, details):
         super().__init__(initial_pos, final_pos, 'Illegal Character', details)
+
+class InvalidSyntax(Error):
+    def __init__(self,initial_pos, final_pos, details):
+        super().__init__(initial_pos, final_pos, 'Invalid Syntax', details)
 
 ##################################
 ### POSITION MANAGEMENT #####
@@ -30,7 +36,7 @@ class Position:
         self.filename= filename
         self.filetext= filetext
     
-    def advance(self, current_character):
+    def advance(self, current_character = None):
         self.index += 1
         self.column += 1
 
@@ -60,9 +66,16 @@ TK_EOF = 'EOF'
 
 
 class Token:
-    def __init__(self, type_, value=None):
-        self.type = type_
+    def __init__(self, type, value=None, initial_pos=None, final_pos=None):
+        self.type = type
         self.value = value
+        
+        if initial_pos: 
+            self.initial_pos = initial_pos.copy()
+            self.final_pos = initial_pos.copy()
+            self.final_pos.advance()
+        if final_pos:
+            self.final_pos = final_pos.copy()
 
     def __repr__(self):
         if self.value: return f'{self.type}:{self.value}'
@@ -91,25 +104,25 @@ class Lexer:
             elif self.current_character in DIGITS:  ##WE define what a number is in the number method
                 tokens.append(self.make_number())
             elif self.current_character == '+':
-                tokens.append(Token(TK_PLUS))
+                tokens.append(Token(TK_PLUS, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '-':
-                tokens.append(Token(TK_MINUS))
+                tokens.append(Token(TK_MINUS, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '*':
-                tokens.append(Token(TK_MUL))
+                tokens.append(Token(TK_MUL, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '/':
-                tokens.append(Token(TK_DIV))
+                tokens.append(Token(TK_DIV,  initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '(':
-                tokens.append(Token(TK_LPAREN))
+                tokens.append(Token(TK_LPAREN, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == ')':
-                tokens.append(Token(TK_RPAREN))
+                tokens.append(Token(TK_RPAREN, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == ';':
-                tokens.append(Token(TK_SCOLON))
+                tokens.append(Token(TK_SCOLON, initial_pos = self.pos))
                 self.advance()
             else:
                 initial_pos = self.pos.copy()
@@ -117,11 +130,13 @@ class Lexer:
                 self.advance()
                 return [], IllegalCharacter(initial_pos, self.pos,"-> " + IChar + " in -> ")
             
+        tokens.append(Token(TK_EOF,initial_pos = self.pos))
         return tokens, None
 
     def make_number(self):
         number_str = ''
         dots = 0
+        initial_pos = self.pos.copy()
 
         while self.current_character != None and self.current_character in DIGITS + '.':
             if self.current_character == '.':
@@ -133,14 +148,10 @@ class Lexer:
             self.advance()
             
         if dots == 0: 
-            return Token(TK_INT, int(number_str))
+            return Token(TK_INT, int(number_str), initial_pos, self.pos)
         else:
-            return Token(TK_FLOAT, float(number_str))
+            return Token(TK_FLOAT, float(number_str), initial_pos, self.pos)
 
 ##### Temporal run function #####
-def run(filename, string):
-    lexer = Lexer(filename, string)
-    tokens, error = lexer.create_tokens()
 
-    return tokens, error
         

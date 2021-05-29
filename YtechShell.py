@@ -1,8 +1,8 @@
-import YTechCode_lexer
+import YTechCode_parser
 
 while True:
     string = input('YtechCode > ')
-    result, error = YTechCode_lexer.run('<stdin>',string)
+    ast, error = YTechCode_parser.run('<stdin>',string)
 
     if error: print(error.error_string())
-    else: print(result)
+    else: print(ast)
