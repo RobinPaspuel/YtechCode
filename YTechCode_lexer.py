@@ -1,5 +1,51 @@
+###################################
+DIGITS = '0123456789'
+###################################
+
+##### ERRORS ########
+class Error:
+    def __init__(self, initial_pos, final_pos, error_class, details):
+        self.initial_pos = initial_pos
+        self.final_pos = final_pos
+        self.error_class= error_class
+        self.details= details
+    
+    def error_string(self):
+        result = f'{self.error_class}: {self.details}'
+        result += f'File {self.initial_pos.filename} at line: {self.initial_pos.line + 1}'
+        return result
+
+class IllegalCharacter(Error):
+    def __init__(self,initial_pos, final_pos, details):
+        super().__init__(initial_pos, final_pos, 'Illegal Character', details)
+
+##################################
+### POSITION MANAGEMENT #####
+
+class Position:
+    def __init__(self, index, line, column, filename, filetext):
+        self.index= index
+        self.line= line
+        self.column= column
+        self.filename= filename
+        self.filetext= filetext
+    
+    def advance(self, current_character):
+        self.index += 1
+        self.column += 1
+
+        if current_character == '\n':
+            self.line += 1
+            self.column = 0
+        return self
+    
+    def copy(self):
+        return Position(self.index, self.line, self.column, self.filename, self.filetext)
+
+##############################
+
 ## DEFINING TOKENS FOR THE LANGUAGE ##
-TK_INT = 'TK_INT'
+TK_INT = 'INT'
 TK_FLOAT = 'FLOAT'
 TK_PLUS = 'PLUS'
 TK_MINUS ='MINUS'
@@ -9,31 +55,15 @@ TK_LPAREN = 'LPAREN'
 TK_RPAREN = 'RPAREN'
 TK_SCOLON = 'SCOLON'
 TK_EOF = 'EOF'
-###################################
-DIGITS = '0123456789'
-###################################
+####################################
 
-##### ERRORS ########
-class Error:
-    def __(self, error_class, details):
-        self.error_class= error_class
-        self.details= details
-    
-    def error_string(self):
-        result = f'{self.error_class}: {self.details}'
-        return result
 
-class IllegalCharacter(Error):
-    def __init__(self, details):
-        super().__init__('Illegal Character', details)
-
-##################################
 
 class Token:
-    def __init__(self, type_, value= None):
+    def __init__(self, type_, value=None):
         self.type = type_
         self.value = value
-    ## Looks better in the terminal
+
     def __repr__(self):
         if self.value: return f'{self.type}:{self.value}'
         return f'{self.type}'
@@ -41,23 +71,25 @@ class Token:
 ## LEXER ##
 
 class Lexer:
-    def __init__(self, string):
+    def __init__(self, filename, string):
+        self.filename = filename
         self.string = string
-        self.pos = -1
+        self.pos = Position(-1, 0, -1, filename, string)
         self.current_character = None
         self.advance()
 
     def advance(self):
-        self.pos = + 1
-        self.current_character = self.string[self.pos] if self.pos < len(self.string) else None
+        self.pos.advance(self.current_character)
+        self.current_character = self.string[self.pos.index] if self.pos.index < len(self.string) else None
 
     def create_tokens(self):
         tokens = []
+
         while self.current_character != None:
-            if self.current_character in '  /t': #Ignoring tab and spaces
+            if self.current_character in ' \t': #Ignoring tab and spaces
                 self.advance()
             elif self.current_character in DIGITS:  ##WE define what a number is in the number method
-                tokens.append(self.number())
+                tokens.append(self.make_number())
             elif self.current_character == '+':
                 tokens.append(Token(TK_PLUS))
                 self.advance()
@@ -80,13 +112,14 @@ class Lexer:
                 tokens.append(Token(TK_SCOLON))
                 self.advance()
             else:
+                initial_pos = self.pos.copy()
                 IChar = self.current_character
                 self.advance()
-                return [], IllegalCharacter("->" + IChar + "<-")
+                return [], IllegalCharacter(initial_pos, self.pos,"-> " + IChar + " in -> ")
             
         return tokens, None
 
-    def number(self):
+    def make_number(self):
         number_str = ''
         dots = 0
 
@@ -105,8 +138,8 @@ class Lexer:
             return Token(TK_FLOAT, float(number_str))
 
 ##### Temporal run function #####
-def run(string):
-    lexer = Lexer(string)
+def run(filename, string):
+    lexer = Lexer(filename, string)
     tokens, error = lexer.create_tokens()
 
     return tokens, error
