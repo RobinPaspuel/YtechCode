@@ -1,31 +1,9 @@
-from error_with_arrows import *
+from error_handlrer import *
 ###################################
 DIGITS = '0123456789'
 ###################################
 
-##### ERRORS ########
-class Error:
-    def __init__(self, initial_pos, final_pos, error_class, details):
-        self.initial_pos = initial_pos
-        self.final_pos = final_pos
-        self.error_class= error_class
-        self.details= details
-    
-    def error_string(self):
-        result = f'{self.error_class}: {self.details}'
-        result += f'File {self.initial_pos.filename} at line: {self.initial_pos.line + 1}'
-        result += '\n\n' + string_with_arrows(self.initial_pos.filetext, self.initial_pos, self.final_pos)
-        return result
 
-class IllegalCharacter(Error):
-    def __init__(self,initial_pos, final_pos, details):
-        super().__init__(initial_pos, final_pos, 'Illegal Character', details)
-
-class InvalidSyntax(Error):
-    def __init__(self,initial_pos, final_pos, details):
-        super().__init__(initial_pos, final_pos, 'Invalid Syntax', details)
-
-##################################
 ### POSITION MANAGEMENT #####
 
 class Position:

@@ -5,6 +5,8 @@ from YTechCode_lexer import *
 class Node_number:
     def __init__(self, token):
         self.token = token
+        self.initial_pos = self.token.initial_pos
+        self.final_pos = self.token.final_pos
 
     def __repr__(self):
         return f'{self.token}'
@@ -15,6 +17,9 @@ class Node_Binary_op:
         self.operator_token = operator_token
         self.right_node = right_node
 
+        self.initial_pos = self.left_node.initial_pos
+        self.final_pos = self.right_node.final_pos
+
     def __repr__(self):
         return f'({self.left_node}, {self.operator_token}, {self.right_node})'
 
@@ -22,6 +27,9 @@ class Node_Unitary_op:
     def __init__(self, operator_token, node):
         self.operator_token = operator_token
         self.node = node
+
+        self.initial_pos = self.operator_token.initial_pos
+        self.final_pos = self.node.final_pos
 
     def __repr__(self):
         return f'({self.operator_token}, {self.node})'
@@ -66,7 +74,7 @@ class Parser:
         if not result.error and self.current_token.type !=  TK_EOF:
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
-                "Expected '+', '-', '*' or '/'"
+                "Expected '+', '-', '*' or '/' in -> "
             ))
         return result
 
@@ -94,12 +102,12 @@ class Parser:
             else: 
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
-                    "Expected ')'"
+                    "Expected ')' in -> "
                 ))
 
         return result.check_fail(InvalidSyntax(
             token.initial_pos, token.final_pos,
-            "Expected INT or FLOAT"
+            "Expected INT or FLOAT in -> "
         ))
 
     def term(self):
@@ -121,12 +129,3 @@ class Parser:
             left_side = Node_Binary_op(left_side,operation_token, right_side)
         return result.check_pass(left_side)
 
-### TEMPORAL RUN ###
-def run(filename, string):
-    lexer = Lexer(filename, string)
-    tokens, error = lexer.create_tokens()
-    if error: return None, error
-
-    parser = Parser(tokens)
-    ast = parser.parse()
-    return ast.node, ast.error
