@@ -55,19 +55,25 @@ class ParserChecker:
     def __init__(self):
         self.error = None
         self.node  = None
-    
+        self.advance_step = 0
+
+    def check_advance(self):
+        self.advance_step += 1
+
+
     def check(self, result):
-        if isinstance(result,ParserChecker):
-            if result.error: self.error = result.error
-            return result.node
-        return result
+        self.advance_step += result.advance_step
+        if result.error: self.error = result.error
+        return result.node
+        
 
     def check_pass(self, node):
         self.node = node
         return self
 
     def check_fail(self, error):
-        self.error = error
+        if not self.error or self.advance_step == 0:
+            self.error = error
         return self
 
 ######## PARSER ##########
@@ -98,19 +104,23 @@ class Parser:
         token = self.current_token
 
         if token.type in (TK_INT, TK_FLOAT):
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             return result.check_pass(Node_number(token))
 
         elif token.type == TK_IDENTIFIER:
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             return result.check_pass(Node_VarDeclare(token))
 
         elif token.type == TK_LPAREN:
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             expr = result.check(self.expr())
             if result.error: return result
             if self.current_token.type == TK_RPAREN:
-                result.check(self.advance())
+                result.check_advance()
+                self.advance()
                 return result.check_pass(expr)
             else: 
                 return result.check_fail(InvalidSyntax(
@@ -119,7 +129,7 @@ class Parser:
                 ))
         return result.check_fail(InvalidSyntax(
             self.current_token.initial_pos, self.current_token.final_pos,
-            "Expected INT, FLOAT, '+', '-' or '(' in -> "
+            "Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(' in -> "
         ))
     
     def power(self):
@@ -130,7 +140,8 @@ class Parser:
         token = self.current_token
 
         if token.type in (TK_PLUS, TK_MINUS):
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             factor = result.check(self.factor())
             if result.error: return result
             return result.check_pass(Node_Unitary_op(token, factor))
@@ -143,26 +154,35 @@ class Parser:
     def expr(self):
         result = ParserChecker()
         if (self.current_token.matches(TK_KEYWORD, 'let')) or (self.current_token.matches(TK_KEYWORD, 'LET')):
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             if self.current_token.type != TK_IDENTIFIER:
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
                     'Expected a valid variable name  in -> '
                 ))
             variable_name = self.current_token
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
         
             if self.current_token.type != TK_EQUALS:
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
                     "Expected '=' in -> "
                 ))
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             expr = result.check(self.expr())
             if result.error: return result
             return result.check_pass(Node_VarAssign(variable_name, expr))
 
-        return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))
+        node = result.check(self.bin_operator(self.term, (TK_PLUS, TK_MINUS)))
+        if result.error: 
+            return result.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                "Expected 'LET or let', INT, FLOAT, IDENTIFIER, '+', '-', or '(' in -> "
+            ))
+        return result.check_pass(node)
 
     def bin_operator(self, function_one, operators, function_two=None):
         if function_two == None:
@@ -173,7 +193,8 @@ class Parser:
 
         while self.current_token.type in operators:
             operation_token = self.current_token
-            result.check(self.advance())
+            result.check_advance()
+            self.advance()
             right_side = result.check(function_two())
             if result.error: return result
             left_side = Node_Binary_op(left_side,operation_token, right_side)
