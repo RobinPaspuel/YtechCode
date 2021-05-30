@@ -93,7 +93,7 @@ class Number:
         if isinstance(another_number, Number):
             return Number(int(self.value or another_number.value)).set_context(self.context), None
 
-    def get_not(self, another_number):
+    def get_not(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
     
     def copy(self):
@@ -101,6 +101,9 @@ class Number:
         copy.position(self.initial_pos, self.final_pos)
         copy.set_context(self.context)
         return copy
+
+    def is_true(self):
+        return self.value != 0
     
     def __repr__(self):
         return str(self.value)
@@ -231,6 +234,27 @@ class Interpreter:
             return checker.check_fail(error)
         else:
             return checker.check_pass(number.position(node.initial_pos, node.final_pos))
+
+    def visit_Node_If(self, node, context):
+        checker = RunTimeChecker()
+
+        for initial_cond, expr in node.if_elifs:
+            initial_cond_value = checker.check(self.visit(initial_cond, context))
+            if checker.error: return checker
+            
+            if initial_cond_value.is_true():
+                expr_value = checker.check(self.visit(expr, context))
+                if checker.error: return checker
+                return checker.check_pass(expr_value)
+            
+        if node.else_case: 
+            else_value = checker.check(self.visit(node.else_case, context))
+            if checker.error: return checker
+            return checker.check_pass(else_value)
+        
+        return checker.check_pass(None)
+
+
 
 ### TEMPORAL RUN ###
 global_symbol_table = SymbolTable()

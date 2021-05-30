@@ -49,6 +49,17 @@ class Node_Unitary_op:
     def __repr__(self):
         return f'({self.operator_token}, {self.node})'
 
+class Node_If:
+    def __init__(self, if_elifs, else_case):
+        self.if_elifs = if_elifs
+        self.else_case = else_case
+
+        self.initial_pos = self.if_elifs[0][0].initial_pos
+        self.final_pos = (self.else_case or self.if_elifs[len(self.if_elifs)-1][0]).final_pos
+
+    def __repr__(self):
+        return f'({self.if_elifs}, {self.else_case})'
+
 ########## PARSER CHECKER ##############
 
 class ParserChecker:
@@ -99,6 +110,98 @@ class Parser:
             ))
         return result
 
+    def if_statement(self):
+        checker = ParserChecker()
+        if_elifs = []
+        else_case = None
+
+        if not ((self.current_token.matches(TK_KEYWORD, 'IF')) or (self.current_token.matches(TK_KEYWORD, 'if'))):
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected 'IF' or 'if' in  -> "
+            ))
+        checker.check_advance()
+        self.advance()
+
+        initial_cond = checker.check(self.expr())
+        if checker.error: return checker
+
+        if not self.current_token.type == TK_CBL:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'{'} in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+
+        expr = checker.check(self.expr())
+        if checker.error: return checker
+        if_elifs.append((initial_cond, expr))
+
+        if not self.current_token.type == TK_CBR:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'}'} in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+
+        while (self.current_token.matches(TK_KEYWORD, 'ELIF')) or (self.current_token.matches(TK_KEYWORD, 'elif')):
+            checker.check_advance()
+            self.advance()
+
+            initial_cond = checker.check(self.expr())
+            if checker.error: return checker
+
+            if not self.current_token.type == TK_CBL:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected {'{'} in -> "
+            ))
+            checker.check_advance()
+            self.advance()
+
+            expr = checker.check(self.expr())
+            if checker.error: return checker
+            if_elifs.append((initial_cond, expr))
+
+            #checker.check_advance()
+            #self.advance()
+
+            if not self.current_token.type == TK_CBR:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected {'}'} in -> "
+            ))
+            checker.check_advance()
+            self.advance()
+        
+        if (self.current_token.matches(TK_KEYWORD, 'ELSE')) or (self.current_token.matches(TK_KEYWORD, 'else')):
+            checker.check_advance()
+            self.advance()
+
+            if not self.current_token.type == TK_CBL:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected {'{'} in -> "
+            ))
+            checker.check_advance()
+            self.advance()
+
+            else_case = checker.check(self.expr())
+            if checker.error: return checker
+
+            if not self.current_token.type == TK_CBR:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected {'}'} in -> "
+            ))
+            checker.check_advance()
+            self.advance()
+
+        return checker.check_pass(Node_If(if_elifs, else_case))
+
+
     def atom(self):
         result = ParserChecker()
         token = self.current_token
@@ -127,6 +230,13 @@ class Parser:
                     self.current_token.initial_pos, self.current_token.final_pos,
                     "Expected ')' in -> "
                 ))
+
+        elif (token.matches(TK_KEYWORD, 'IF')) or (token.matches(TK_KEYWORD, 'if')):
+            if_statement = result.check(self.if_statement())
+            if result.error: return result
+            return result.check_pass(if_statement)
+
+
         return result.check_fail(InvalidSyntax(
             self.current_token.initial_pos, self.current_token.final_pos,
             "Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(' in -> "
@@ -222,3 +332,14 @@ class Parser:
             left_side = Node_Binary_op(left_side,operation_token, right_side)
         return result.check_pass(left_side)
 
+def parser_run(filename, text):
+		# Generate tokens
+		lexer = Lexer(filename, text)
+		tokens, error = lexer.create_tokens()
+		if error: return None, error
+		
+		# Generate AST
+		parser = Parser(tokens)
+		ast = parser.parse()
+
+		return ast.node, ast.error

@@ -50,6 +50,8 @@ TK_LL           = 'LL'
 TK_GG           = 'GG'
 TK_LEQ          = 'LEQ'
 TK_GEQ          = 'GEQ'
+TK_CBL          = 'CBL'
+TK_CBR          = 'CBR'
 TK_SCOLON       = 'SCOLON'
 TK_EOF          = 'EOF'
 
@@ -61,7 +63,13 @@ KEYWORDS = [
     'or', 
     'OR',
     'not',
-    'NOT'
+    'NOT', 
+    'IF', 
+    'if',
+    'ELIF',
+    'elif',
+    'ELSE',
+    'else'
 ]
 ####################################
 
@@ -144,6 +152,13 @@ class Lexer:
                 tokens.append(self.make_less_than())
             elif self.current_character == '>':
                 tokens.append(self.make_grater_than())
+            elif self.current_character == '{':
+                tokens.append(Token(TK_CBL, initial_pos = self.pos))
+                self.advance()
+            elif self.current_character == '}':
+                tokens.append(Token(TK_CBR, initial_pos = self.pos))
+                self.advance()
+
         
             else:
                 initial_pos = self.pos.copy()
