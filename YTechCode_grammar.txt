@@ -1,4 +1,4 @@
-expr        : (KEYWORD:LET|KEYWORD:let) IDENTIFIER EQ expr
+expr        : (KEYWORD:LET|KEYWORD:let) IDENTIFIER EQUALS expr
             : comp_expr ((KEYWORD:AND|KEYWORD:and|KEYWORD:OR|KEYWORD:or) comp_expr)*
 
 comp_expr   :NOT comp_expr
@@ -16,7 +16,14 @@ power       : atom (POW factor)*
 atom        : INT|FLOAT|IDENTIFIER
             : LPAREN expr RPAREN
             : if-stmt
+            : for-stmt
+            : while-stmt
 
 if-stmt     : (KEYWORD: IF|KEYWORD: if) expr CBL expr CBR
             : ((KEYWORD: ELIF|KEYWORD: elif) expr CBL expr CBR)*
             : ((KEYWORD: ELSE|KEYWORD: else) CBL expr CBR) opt
+
+for-stmt    : (KEYWORD: FOR|KEYWORD: for) IDENTIFIER EQUALS expr COLON expr 
+              COLOR expr (opt) CBL expr CBR
+
+while-stmt  : (KEYWORD: WHILE|KEYWORD: while) expr CBL expr CBR

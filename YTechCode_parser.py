@@ -60,6 +60,30 @@ class Node_If:
     def __repr__(self):
         return f'({self.if_elifs}, {self.else_case})'
 
+class Node_For:
+    def __init__(self, variable_name_token, node_start_value, node_final_value, node_step_value, node_body):
+        self.variable_name_token = variable_name_token
+        self.node_start_value = node_start_value
+        self.node_final_value = node_final_value
+        self.node_step_value = node_step_value
+        self.node_body = node_body
+
+        self.initial_pos = self.variable_name_token.initial_pos
+        self.final_pos = self.node_body.final_pos
+
+    def __repr__(self):
+        return f"KEYWORD:FOR ({self.variable_name_token} = {self.node_start_value} : {self.node_final_value} : {self.node_step_value}) {'{'} {self.node_body} {'}'}"
+
+class Node_While:
+    def __init__(self, node_condition, node_body):
+        self.node_condition = node_condition
+        self.node_body = node_body
+
+        self.initial_pos = self.node_condition.initial_pos
+        self.final_pos = self.node_body.final_pos
+
+    def __repr__(self):
+        return f"KEYWORD:WHILE ({self.node_condition}) {'{'}{self.node_body} {'}'}"
 ########## PARSER CHECKER ##############
 
 class ParserChecker:
@@ -109,6 +133,119 @@ class Parser:
                 "Expected '+', '-', '*' or '/' in -> "
             ))
         return result
+
+    def for_statement(self):
+        checker = ParserChecker()
+
+        if not ((self.current_token.matches(TK_KEYWORD, 'FOR')) or (self.current_token.matches(TK_KEYWORD, 'for'))):
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected 'FOR' or 'for' in -> "
+            ))
+
+        checker.check_advance()
+        self.advance()
+
+        if self.current_token.type != TK_IDENTIFIER:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected a variable to iterate in -> "
+            ))
+        
+        variable_name = self.current_token
+        checker.check_advance()
+        self.advance()
+
+        if self.current_token.type != TK_EQUALS:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected '=' in -> "
+            ))
+        
+        checker.check_advance()
+        self.advance()
+
+        start_value = checker.check(self.expr())
+        if checker.error: return checker
+
+        if self.current_token.type != TK_COLON:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected ':' in -> "
+            ))
+        
+        checker.check_advance()
+        self.advance()
+
+        final_value = checker.check(self.expr())
+        if checker.error: return checker
+
+        if self.current_token.type == TK_COLON:
+            checker.check_advance()
+            self.advance()
+
+            step_value = checker.check(self.expr())
+            if checker.error: return checker
+        else:
+            step_value = None
+
+        if self.current_token.type != TK_CBL:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'{'} in -> "
+            ))
+        
+        checker.check_advance()
+        self.advance()
+
+        body = checker.check(self.expr())
+        if checker.error: return checker
+
+        if self.current_token.type != TK_CBR:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'}'} in -> '"
+            ))
+        checker.check_advance()
+        self.advance()
+        
+        return checker.check_pass(Node_For(variable_name, start_value, final_value, step_value, body))
+
+    def while_statement(self):
+        checker = ParserChecker()
+
+        if not ((self.current_token.matches(TK_KEYWORD, 'WHILE')) or (self.current_token.matches(TK_KEYWORD, 'while'))):
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected 'WHILE' or 'while' in -> "
+            ))
+
+        checker.check_advance()
+        self.advance()
+
+        node_condition = checker.check(self.expr())
+        if checker.error: return checker
+
+        if self.current_token.type != TK_CBL:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'{'} in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+
+        body = checker.check(self.expr())
+        if checker.error: return checker
+
+        if self.current_token.type != TK_CBR:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'}'} in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+        return checker.check_pass(Node_While(node_condition, body))
+
 
     def if_statement(self):
         checker = ParserChecker()
@@ -236,6 +373,15 @@ class Parser:
             if result.error: return result
             return result.check_pass(if_statement)
 
+        elif (token.matches(TK_KEYWORD, 'FOR')) or (token.matches(TK_KEYWORD, 'for')):
+            for_statement = result.check(self.for_statement())
+            if result.error: return result
+            return result.check_pass(for_statement)
+
+        elif (token.matches(TK_KEYWORD, 'WHILE')) or (token.matches(TK_KEYWORD, 'while')):
+            while_statement = result.check(self.while_statement())
+            if result.error: return result
+            return result.check_pass(while_statement)
 
         return result.check_fail(InvalidSyntax(
             self.current_token.initial_pos, self.current_token.final_pos,

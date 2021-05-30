@@ -254,6 +254,49 @@ class Interpreter:
         
         return checker.check_pass(None)
 
+    def visit_Node_For(self, node, context):
+        checker = RunTimeChecker()
+
+        start_value = checker.check(self.visit(node.node_start_value, context))
+        if checker.error: return checker
+
+        final_value = checker.check(self.visit(node.node_final_value, context))
+        if checker.error: return checker
+
+        if node.node_step_value: 
+            step_value = checker.check(self.visit(node.node_step_value, context))
+            if checker.error: return checker
+        else:
+            step_value = Number(1)
+        
+        iter = start_value.value
+
+        if step_value.value >= 0:
+            condition = lambda: iter < final_value.value
+        else:
+            condition = lambda: iter > final_value.value
+        
+        while condition():
+            context.symbol_table.set(node.variable_name_token.value, Number(iter))
+            iter += step_value.value
+
+            checker.check(self.visit(node.node_body, context))
+            if checker.error: return checker
+        
+        return checker.check_pass(None)
+    
+    def visit_Node_While(self, node, context):
+        checker = RunTimeChecker()
+        while True:
+            condition = checker.check(self.visit(node.node_condition, context))
+            if checker.error: return checker
+
+            if not condition.is_true(): break
+
+            checker.check(self.visit(node.node_body, context))
+            if checker.error: return checker
+        
+        return checker.check_pass(None)
 
 
 ### TEMPORAL RUN ###

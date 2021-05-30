@@ -53,6 +53,7 @@ TK_GEQ          = 'GEQ'
 TK_CBL          = 'CBL'
 TK_CBR          = 'CBR'
 TK_SCOLON       = 'SCOLON'
+TK_COLON        = 'COLON'
 TK_EOF          = 'EOF'
 
 KEYWORDS = [
@@ -69,7 +70,11 @@ KEYWORDS = [
     'ELIF',
     'elif',
     'ELSE',
-    'else'
+    'else',
+    'FOR',
+    'for',
+    'WHILE',
+    'while'
 ]
 ####################################
 
@@ -157,6 +162,9 @@ class Lexer:
                 self.advance()
             elif self.current_character == '}':
                 tokens.append(Token(TK_CBR, initial_pos = self.pos))
+                self.advance()
+            elif self.current_character == ':':
+                tokens.append(Token(TK_COLON))
                 self.advance()
 
         
