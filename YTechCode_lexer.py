@@ -35,6 +35,7 @@ TK_PLUS = 'PLUS'
 TK_MINUS ='MINUS'
 TK_MUL = 'MUL'
 TK_DIV = 'DIV'
+TK_POW = 'POW'
 TK_LPAREN = 'LPAREN'
 TK_RPAREN = 'RPAREN'
 TK_SCOLON = 'SCOLON'
@@ -93,6 +94,9 @@ class Lexer:
             elif self.current_character == '/':
                 tokens.append(Token(TK_DIV,  initial_pos = self.pos))
                 self.advance()
+            elif self.current_character == '^':
+                tokens.append(Token(TK_POW,  initial_pos = self.pos))
+                self.advance()
             elif self.current_character == '(':
                 tokens.append(Token(TK_LPAREN, initial_pos = self.pos))
                 self.advance()
@@ -132,4 +136,9 @@ class Lexer:
 
 ##### Temporal run function #####
 
+def lexer_run(filename, text):
+    lexer = Lexer(filename, text)
+    tokens, error = lexer.create_tokens()
+
+    return tokens, error
         

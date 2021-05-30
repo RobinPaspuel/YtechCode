@@ -1,4 +1,5 @@
 import YTechCode_interpreter
+import YTechCode_lexer
 
 while True:
     string = input('YtechCode > ')

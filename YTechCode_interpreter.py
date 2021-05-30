@@ -57,6 +57,10 @@ class Number:
                 )
             return Number(self.value / another_number.value).set_context(self.context), None
     
+    def pow_by(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(self.value ** another_number.value).set_context(self.context), None
+    
     def __repr__(self):
         return str(self.value)
 
@@ -103,6 +107,8 @@ class Interpreter:
             result, error = left.mul_by(right)
         elif node.operator_token.type == TK_DIV:
             result, error = left.div_by(right)
+        elif node.operator_token.type == TK_POW:
+            result, error = left.pow_by(right)
 
         if error: 
             return checker.check_fail(error)

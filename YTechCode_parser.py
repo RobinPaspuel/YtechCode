@@ -78,17 +78,11 @@ class Parser:
             ))
         return result
 
-    def factor(self):
+    def atom(self):
         result = ParserChecker()
         token = self.current_token
 
-        if token.type in (TK_PLUS, TK_MINUS):
-            result.check(self.advance())
-            factor = result.check(self.factor())
-            if result.error: return result
-            return result.check_pass(Node_Unitary_op(token, factor))
-
-        elif token.type in (TK_INT, TK_FLOAT):
+        if token.type in (TK_INT, TK_FLOAT):
             result.check(self.advance())
             return result.check_pass(Node_number(token))
 
@@ -104,11 +98,25 @@ class Parser:
                     self.current_token.initial_pos, self.current_token.final_pos,
                     "Expected ')' in -> "
                 ))
-
         return result.check_fail(InvalidSyntax(
-            token.initial_pos, token.final_pos,
-            "Expected INT or FLOAT in -> "
+            self.current_token.initial_pos, self.current_token.final_pos,
+            "Expected INT, FLOAT, '+', '-' or '(' in -> "
         ))
+    
+    def power(self):
+        return self.bin_operator(self.atom, (TK_POW, ), self.factor)
+
+    def factor(self):
+        result = ParserChecker()
+        token = self.current_token
+
+        if token.type in (TK_PLUS, TK_MINUS):
+            result.check(self.advance())
+            factor = result.check(self.factor())
+            if result.error: return result
+            return result.check_pass(Node_Unitary_op(token, factor))
+
+        return self.power()
 
     def term(self):
         return self.bin_operator(self.factor, (TK_MUL, TK_DIV))
@@ -116,15 +124,17 @@ class Parser:
     def expr(self):
         return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))
 
-    def bin_operator(self, function, operators):
+    def bin_operator(self, function_one, operators, function_two=None):
+        if function_two == None:
+            function_two = function_one
         result = ParserChecker()
-        left_side = result.check(function())
+        left_side = result.check(function_one())
         if result.error: return result
 
         while self.current_token.type in operators:
             operation_token = self.current_token
             result.check(self.advance())
-            right_side = result.check(function())
+            right_side = result.check(function_two())
             if result.error: return result
             left_side = Node_Binary_op(left_side,operation_token, right_side)
         return result.check_pass(left_side)
