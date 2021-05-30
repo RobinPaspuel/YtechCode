@@ -66,12 +66,32 @@ class Number:
 
 
 ############## CONTEXT ########################
-
+		
 class Context:
 	def __init__(self, context_name, context_parent=None, context_parent_entry_pos=None):
 		self.context_name = context_name
 		self.context_parent = context_parent
-		self.context_parent_entry_pos = context_parent_entry_pos
+		self.parent_entry_pos = context_parent_entry_pos
+		self.symbol_table = None
+
+############### SYMBOL TABLE ##################
+
+class SymbolTable:
+    def __init__(self):
+        self.symbols ={}
+        self.parent = None
+    
+    def get(self, name):
+        value = self.symbols.get(name, None)
+        if value == None and self.parent:
+            return self.parent.get(name)
+        return value
+    
+    def set(self, name, value):
+        self.symbols[name] = value
+    
+    def remove(self, name):
+        del self.symbols[name]
 
 ############## INTERPRETER ###################
 class Interpreter:
@@ -90,7 +110,28 @@ class Interpreter:
         return checker.check_pass(
             Number(node.token.value).set_context(context).position(node.initial_pos, node.final_pos)
             )
+
+    def visit_Node_VarDeclare(self, node, context):
+        checker = RunTimeChecker()
+        variable_name= node.variable_name_token.value
+        value = context.symbol_table.get(variable_name)
+
+        if not value:
+            return checker.check_fail(RunTimeError(
+                node.initial_pos, node.final_pos,
+                f"'{variable_name}' is not defined! ", context
+            ))
+        return checker.check_pass(value)
     
+    def visit_Node_VarAssign(self, node, context):
+        checker = RunTimeChecker()
+        variable_name= node.variable_name_token.value
+        value =  checker.check(self.visit(node.value_node, context))
+        if checker.error: return checker
+
+        context.symbol_table.set(variable_name, value)
+        return checker.check_pass(value)
+
     def visit_Node_Binary_op(self, node, context):
         checker = RunTimeChecker()
 
@@ -132,6 +173,9 @@ class Interpreter:
             return checker.check_pass(number.position(node.initial_pos, node.final_pos))
 
 ### TEMPORAL RUN ###
+global_symbol_table = SymbolTable()
+global_symbol_table.set("null", Number(0))
+
 def run(filename, string):
     lexer = Lexer(filename, string)
     tokens, error = lexer.create_tokens()
@@ -143,6 +187,7 @@ def run(filename, string):
     ## Executing ptogram ##
     interpreter = Interpreter()
     context = Context('<program>')
+    context.symbol_table = global_symbol_table
     result = interpreter.visit(ast.node, context)
 
     return result.value, result.error

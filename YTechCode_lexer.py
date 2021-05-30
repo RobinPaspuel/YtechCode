@@ -1,6 +1,9 @@
 from error_handlrer import *
+import string
 ###################################
 DIGITS = '0123456789'
+LETTERS = string.ascii_letters
+LETTERS_and_DIGITS = LETTERS + DIGITS
 ###################################
 
 
@@ -29,17 +32,25 @@ class Position:
 ##############################
 
 ## DEFINING TOKENS FOR THE LANGUAGE ##
-TK_INT = 'INT'
-TK_FLOAT = 'FLOAT'
-TK_PLUS = 'PLUS'
-TK_MINUS ='MINUS'
-TK_MUL = 'MUL'
-TK_DIV = 'DIV'
-TK_POW = 'POW'
-TK_LPAREN = 'LPAREN'
-TK_RPAREN = 'RPAREN'
-TK_SCOLON = 'SCOLON'
-TK_EOF = 'EOF'
+TK_INT          = 'INT'
+TK_FLOAT        = 'FLOAT'
+TK_IDENTIFIER   = 'IDENTIFIER'
+TK_KEYWORD      = 'KEYWORD'
+TK_EQUALS       = 'EQUALS'
+TK_PLUS         = 'PLUS'
+TK_MINUS        = 'MINUS'
+TK_MUL          = 'MUL'
+TK_DIV          = 'DIV'
+TK_POW          = 'POW'
+TK_LPAREN       = 'LPAREN'
+TK_RPAREN       = 'RPAREN'
+TK_SCOLON       = 'SCOLON'
+TK_EOF          = 'EOF'
+
+KEYWORDS = [
+    'let',
+    'LET'
+]
 ####################################
 
 
@@ -55,6 +66,9 @@ class Token:
             self.final_pos.advance()
         if final_pos:
             self.final_pos = final_pos.copy()
+
+    def matches(self, type_, value):
+        return self.type == type_ and self.value == value
 
     def __repr__(self):
         if self.value: return f'{self.type}:{self.value}'
@@ -82,6 +96,8 @@ class Lexer:
                 self.advance()
             elif self.current_character in DIGITS:  ##WE define what a number is in the number method
                 tokens.append(self.make_number())
+            elif self.current_character in LETTERS:
+                tokens.append(self.make_identifier())
             elif self.current_character == '+':
                 tokens.append(Token(TK_PLUS, initial_pos = self.pos))
                 self.advance()
@@ -96,6 +112,9 @@ class Lexer:
                 self.advance()
             elif self.current_character == '^':
                 tokens.append(Token(TK_POW,  initial_pos = self.pos))
+                self.advance()
+            elif self.current_character == '=':
+                tokens.append(Token(TK_EQUALS,  initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '(':
                 tokens.append(Token(TK_LPAREN, initial_pos = self.pos))
@@ -133,6 +152,17 @@ class Lexer:
             return Token(TK_INT, int(number_str), initial_pos, self.pos)
         else:
             return Token(TK_FLOAT, float(number_str), initial_pos, self.pos)
+
+    def make_identifier(self):
+        identifier_str = ''
+        initial_pos = self.pos.copy()
+    
+        while self.current_character != None and self.current_character in LETTERS_and_DIGITS + '_':
+            identifier_str += self.current_character
+            self.advance()
+        token_type = TK_KEYWORD if identifier_str in KEYWORDS else TK_IDENTIFIER
+        return Token(token_type, identifier_str, initial_pos, self.pos)
+
 
 ##### Temporal run function #####
 

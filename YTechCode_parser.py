@@ -11,6 +11,21 @@ class Node_number:
     def __repr__(self):
         return f'{self.token}'
 
+class Node_VarDeclare:
+    def __init__(self, variable_name_token):
+        self.variable_name_token = variable_name_token
+
+        self.initial_pos = self.variable_name_token.initial_pos
+        self.final_pos = self.variable_name_token.final_pos
+
+class Node_VarAssign:
+    def __init__(self, variable_name_token, value_node):
+        self.variable_name_token = variable_name_token
+        self.value_node = value_node
+
+        self.initial_pos = self.variable_name_token.initial_pos
+        self.final_pos = self.value_node.final_pos
+
 class Node_Binary_op:
     def __init__(self, left_node, operator_token, right_node):
         self.left_node = left_node
@@ -86,6 +101,10 @@ class Parser:
             result.check(self.advance())
             return result.check_pass(Node_number(token))
 
+        elif token.type == TK_IDENTIFIER:
+            result.check(self.advance())
+            return result.check_pass(Node_VarDeclare(token))
+
         elif token.type == TK_LPAREN:
             result.check(self.advance())
             expr = result.check(self.expr())
@@ -122,6 +141,27 @@ class Parser:
         return self.bin_operator(self.factor, (TK_MUL, TK_DIV))
 
     def expr(self):
+        result = ParserChecker()
+        if (self.current_token.matches(TK_KEYWORD, 'let')) or (self.current_token.matches(TK_KEYWORD, 'LET')):
+            result.check(self.advance())
+            if self.current_token.type != TK_IDENTIFIER:
+                return result.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    'Expected a valid variable name  in -> '
+                ))
+            variable_name = self.current_token
+            result.check(self.advance())
+        
+            if self.current_token.type != TK_EQUALS:
+                return result.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    "Expected '=' in -> "
+                ))
+            result.check(self.advance())
+            expr = result.check(self.expr())
+            if result.error: return result
+            return result.check_pass(Node_VarAssign(variable_name, expr))
+
         return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))
 
     def bin_operator(self, function_one, operators, function_two=None):
