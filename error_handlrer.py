@@ -18,6 +18,10 @@ class IllegalCharacter(Error):
     def __init__(self,initial_pos, final_pos, details):
         super().__init__(initial_pos, final_pos, 'Illegal Character', details)
 
+class ExpectedCharacterError(Error):
+    def __init__(self,initial_pos, final_pos, details):
+        super().__init__(initial_pos, final_pos, 'Expected Character', details)
+
 class InvalidSyntax(Error):
     def __init__(self,initial_pos, final_pos, details = ''):
         super().__init__(initial_pos, final_pos, 'Invalid Syntax', details)

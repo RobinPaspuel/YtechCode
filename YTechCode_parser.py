@@ -151,6 +151,27 @@ class Parser:
     def term(self):
         return self.bin_operator(self.factor, (TK_MUL, TK_DIV))
 
+    def arith_expr(self):
+        return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))        
+
+    def comparison_expr(self):
+        checker = ParserChecker()
+
+        if self.current_token.matches(TK_KEYWORD, 'NOT'):
+            relation_token = self.current_token
+            checker.check_advance()
+            self.advance()
+            node = checker.check(self.comparison_expr())
+            if checker.error: return checker
+            return checker.check_pass(Node_Unitary_op(relation_token, node))
+        node = checker.check(self.bin_operator(self.arith_expr, (TK_DEQ, TK_NDEQ, TK_LL, TK_GG, TK_LEQ, TK_GEQ)))
+        if checker.error: 
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                "Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(', 'NOT' in -> "
+            ))
+        return checker.check_pass(node)
+
     def expr(self):
         result = ParserChecker()
         if (self.current_token.matches(TK_KEYWORD, 'let')) or (self.current_token.matches(TK_KEYWORD, 'LET')):
@@ -176,7 +197,8 @@ class Parser:
             if result.error: return result
             return result.check_pass(Node_VarAssign(variable_name, expr))
 
-        node = result.check(self.bin_operator(self.term, (TK_PLUS, TK_MINUS)))
+        node = result.check(self.bin_operator(self.comparison_expr, ((TK_KEYWORD, "AND"), (TK_KEYWORD, "OR"), 
+                                                                    (TK_KEYWORD, "and"), (TK_KEYWORD, "or"))))
         if result.error: 
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
@@ -191,7 +213,7 @@ class Parser:
         left_side = result.check(function_one())
         if result.error: return result
 
-        while self.current_token.type in operators:
+        while self.current_token.type in operators or (self.current_token.type, self.current_token.value) in operators:
             operation_token = self.current_token
             result.check_advance()
             self.advance()

@@ -60,6 +60,47 @@ class Number:
     def pow_by(self, another_number):
         if isinstance(another_number, Number):
             return Number(self.value ** another_number.value).set_context(self.context), None
+
+    def comparison_equal(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value == another_number.value)).set_context(self.context), None
+    
+    def comparison_notequal(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value != another_number.value)).set_context(self.context), None
+    
+    def comparison_less(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value < another_number.value)).set_context(self.context), None
+
+    def comparison_greater(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value > another_number.value)).set_context(self.context), None
+    
+    def comparison_leq(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value <= another_number.value)).set_context(self.context), None
+    
+    def comparison_geq(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value >= another_number.value)).set_context(self.context), None
+
+    def and_by(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value and another_number.value)).set_context(self.context), None
+
+    def or_by(self, another_number):
+        if isinstance(another_number, Number):
+            return Number(int(self.value or another_number.value)).set_context(self.context), None
+
+    def get_not(self, another_number):
+        return Number(1 if self.value == 0 else 0).set_context(self.context), None
+    
+    def copy(self):
+        copy = Number(self.value)
+        copy.position(self.initial_pos, self.final_pos)
+        copy.set_context(self.context)
+        return copy
     
     def __repr__(self):
         return str(self.value)
@@ -71,7 +112,7 @@ class Context:
 	def __init__(self, context_name, context_parent=None, context_parent_entry_pos=None):
 		self.context_name = context_name
 		self.context_parent = context_parent
-		self.parent_entry_pos = context_parent_entry_pos
+		self.context_parent_entry_pos = context_parent_entry_pos
 		self.symbol_table = None
 
 ############### SYMBOL TABLE ##################
@@ -121,6 +162,7 @@ class Interpreter:
                 node.initial_pos, node.final_pos,
                 f"'{variable_name}' is not defined! ", context
             ))
+        value = value.copy().position(node.initial_pos, node.final_pos)
         return checker.check_pass(value)
     
     def visit_Node_VarAssign(self, node, context):
@@ -150,6 +192,22 @@ class Interpreter:
             result, error = left.div_by(right)
         elif node.operator_token.type == TK_POW:
             result, error = left.pow_by(right)
+        elif node.operator_token.type == TK_DEQ:
+            result, error = left.comparison_equal(right)
+        elif node.operator_token.type == TK_NDEQ:
+            result, error = left.comparison_notequal(right)
+        elif node.operator_token.type == TK_LL:
+            result, error = left.comparison_less(right)
+        elif node.operator_token.type == TK_GG:
+            result, error = left.comparison_greater(right)
+        elif node.operator_token.type == TK_LEQ:
+            result, error = left.comparison_leq(right)
+        elif node.operator_token.type == TK_GEQ:
+            result, error = left.comparison_geq(right)
+        elif (node.operator_token.matches(TK_KEYWORD, 'AND')) or (node.operator_token.matches(TK_KEYWORD, 'and')):
+            result, error = left.and_by(right)
+        elif (node.operator_token.matches(TK_KEYWORD, 'OR')) or (node.operator_token.matches(TK_KEYWORD, 'or')):
+            result, error = left.or_by(right)
 
         if error: 
             return checker.check_fail(error)
@@ -166,7 +224,9 @@ class Interpreter:
 
         if node.operator_token.type == TK_MINUS:
             number, error = number.mul_by(Number(-1))
-
+        elif (self.operator_token.matches(TK_KEYWORD, 'NOT')) or (self.operator_token.matches(TK_KEYWORD, 'not')):
+            number, error = number.get_not()
+        
         if error: 
             return checker.check_fail(error)
         else:
@@ -175,6 +235,12 @@ class Interpreter:
 ### TEMPORAL RUN ###
 global_symbol_table = SymbolTable()
 global_symbol_table.set("null", Number(0))
+global_symbol_table.set("NULL", Number(0))
+global_symbol_table.set("false", Number(0))
+global_symbol_table.set("FALSE", Number(0))
+global_symbol_table.set("true", Number(1))
+global_symbol_table.set("TRUE", Number(1))
+
 
 def run(filename, string):
     lexer = Lexer(filename, string)

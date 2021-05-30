@@ -44,12 +44,24 @@ TK_DIV          = 'DIV'
 TK_POW          = 'POW'
 TK_LPAREN       = 'LPAREN'
 TK_RPAREN       = 'RPAREN'
+TK_DEQ          = 'DEQ'
+TK_NDEQ         = 'NDEQ'
+TK_LL           = 'LL'
+TK_GG           = 'GG'
+TK_LEQ          = 'LEQ'
+TK_GEQ          = 'GEQ'
 TK_SCOLON       = 'SCOLON'
 TK_EOF          = 'EOF'
 
 KEYWORDS = [
     'let',
-    'LET'
+    'LET',
+    'and',
+    'AND',
+    'or', 
+    'OR',
+    'not',
+    'NOT'
 ]
 ####################################
 
@@ -113,9 +125,6 @@ class Lexer:
             elif self.current_character == '^':
                 tokens.append(Token(TK_POW,  initial_pos = self.pos))
                 self.advance()
-            elif self.current_character == '=':
-                tokens.append(Token(TK_EQUALS,  initial_pos = self.pos))
-                self.advance()
             elif self.current_character == '(':
                 tokens.append(Token(TK_LPAREN, initial_pos = self.pos))
                 self.advance()
@@ -125,6 +134,17 @@ class Lexer:
             elif self.current_character == ';':
                 tokens.append(Token(TK_SCOLON, initial_pos = self.pos))
                 self.advance()
+            elif self.current_character == '!':
+                token, error = self.make_not_equal()
+                if error: return [], error
+                tokens.append(token)
+            elif self.current_character == '=':
+                tokens.append(self.make_equal())
+            elif self.current_character == '<':
+                tokens.append(self.make_less_than())
+            elif self.current_character == '>':
+                tokens.append(self.make_grater_than())
+        
             else:
                 initial_pos = self.pos.copy()
                 IChar = self.current_character
@@ -162,6 +182,49 @@ class Lexer:
             self.advance()
         token_type = TK_KEYWORD if identifier_str in KEYWORDS else TK_IDENTIFIER
         return Token(token_type, identifier_str, initial_pos, self.pos)
+
+    def make_not_equal(self):
+        initial_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_character == '=':
+            self.advance()
+            return Token(TK_NDEQ, initial_pos = initial_pos, final_pos = self.pos), None
+        self.advance()
+        return None, ExpectedCharacterError(
+            initial_pos, self.pos,
+            "Missing '=' after '!' in -> "
+        )
+
+    def make_equal(self):
+        token_type = TK_EQUALS
+        initial_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_character == '=':
+            self.advance()
+            token_type = TK_DEQ
+        return Token(token_type, initial_pos = initial_pos, final_pos = self.pos)
+    
+    def make_less_than(self):
+        token_type = TK_LL
+        initial_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_character == '=':
+            self.advance()
+            token_type = TK_LEQ
+        return Token(token_type, initial_pos = initial_pos, final_pos = self.pos)
+
+    def make_grater_than(self):
+        token_type = TK_GG
+        initial_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_character == '=':
+            self.advance()
+            token_type = TK_GEQ
+        return Token(token_type, initial_pos = initial_pos, final_pos = self.pos)
 
 
 ##### Temporal run function #####
