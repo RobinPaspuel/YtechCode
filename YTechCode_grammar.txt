@@ -15,7 +15,7 @@ power       : func_call (POW factor)*
 
 func_call   : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
 
-atom        : INT|FLOAT|IDENTIFIER
+atom        : int|float|IDENTIFIER
             : LPAREN expr RPAREN
             : if-stmt
             : for-stmt
@@ -32,4 +32,28 @@ for-stmt    : (KEYWORD: FOR|KEYWORD: for) IDENTIFIER EQUALS expr COLON expr
 while-stmt  : (KEYWORD: WHILE|KEYWORD: while) expr CBL expr CBR
 
 def_func    : (KEYWORD: DEF|KEYWORD: def) IDENTIFIER LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN CBL expr CBR
+
+LPAREN      : '('
+
+RPAREN      : ')'
+
+CBL         : '{'
+
+CBL         : '}'
+
+COLON       : ':'
+
+EQUALS      : '='
+
+DEQ         : '=='
+
+NDEQ        : '!='
+
+LL          : '<'
+
+GG          : '>'
+
+LEQ         : '<='
+
+GEQ         : '>='
 
