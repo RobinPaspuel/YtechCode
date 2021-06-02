@@ -84,6 +84,28 @@ class Node_While:
 
     def __repr__(self):
         return f"KEYWORD:WHILE ({self.node_condition}) {'{'}{self.node_body} {'}'}"
+
+class Node_Def_function:
+    def __init__(self, variable_name_token, arguments_token, node_body):
+        self.variable_name_token = variable_name_token
+        self.arguments_token = arguments_token
+        self.node_body = node_body
+
+        self.initial_pos = self.variable_name_token.initial_pos
+        self.final_pos = self.node_body.final_pos
+
+class Node_call_func:
+    def __init__(self, call_to_node, node_args):
+        self.call_to_node = call_to_node
+        self.node_args = node_args
+
+        self.initial_pos = self.call_to_node.initial_pos
+
+        if len(self.node_args) > 0:
+            self.final_pos = self.node_args[len(self.node_args) - 1].final_pos
+        else:
+            self.final_pos = self.call_to_node.final_pos
+
 ########## PARSER CHECKER ##############
 
 class ParserChecker:
@@ -130,9 +152,95 @@ class Parser:
         if not result.error and self.current_token.type !=  TK_EOF:
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
-                "Expected '+', '-', '*' or '/' in -> "
+                f"Expected '+', '-', '*' or '/' in -> "
             ))
         return result
+
+    def def_func(self):
+        checker = ParserChecker()
+
+        if not ((self.current_token.matches(TK_KEYWORD, 'DEF')) or (self.current_token.matches(TK_KEYWORD, 'def'))):
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected 'DEF' or 'def' in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+
+        if self.current_token.type != TK_IDENTIFIER:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected a function name in -> "
+            ))
+
+        variable_name = self.current_token
+        checker.check_advance()
+        self.advance()
+
+        if self.current_token.type != TK_LPAREN:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected '(' in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+        arguments_token = []
+
+        if self.current_token.type == TK_IDENTIFIER:
+            arguments_token.append(self.current_token)
+            checker.check_advance()
+            self.advance()
+
+            while self.current_token.type == TK_COMMA:
+                checker.check_advance()
+                self.advance()
+                if self.current_token.type != TK_IDENTIFIER:
+                    return checker.check_fail(InvalidSyntax(
+                        self.current_token.initial_pos, self.current_token.final_pos,
+                        f"Expected an additional parameter in -> "
+                    ))
+                arguments_token.append(self.current_token)
+                checker.check_advance()
+                self.advance()
+            
+            if self.current_token.type != TK_RPAREN:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected ',' or ')' in -> "
+                ))
+            
+        
+        else:
+            if self.current_token.type != TK_RPAREN:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expecet a parameter or ')' in -> "
+                ))
+        checker.check_advance()
+        self.advance() 
+
+        if self.current_token.type != TK_CBL:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                "Expected '{' in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+
+        return_node = checker.check(self.expr())
+        if checker.error: return checker
+
+        if self.current_token.type != TK_CBR:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos,
+                "Expected '}' in -> "
+            ))
+            
+        checker.check_advance()
+        self.advance()
+
+        return checker.check_pass(Node_Def_function(variable_name, arguments_token, return_node))
+        
 
     def for_statement(self):
         checker = ParserChecker()
@@ -365,7 +473,7 @@ class Parser:
             else: 
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
-                    "Expected ')' in -> "
+                    f"Expected ')' in -> "
                 ))
 
         elif (token.matches(TK_KEYWORD, 'IF')) or (token.matches(TK_KEYWORD, 'if')):
@@ -383,13 +491,59 @@ class Parser:
             if result.error: return result
             return result.check_pass(while_statement)
 
+        elif (token.matches(TK_KEYWORD, 'DEF')) or (token.matches(TK_KEYWORD, 'def')):
+            function_name = result.check(self.def_func())
+            if result.error: return result
+            return result.check_pass(function_name)
+
         return result.check_fail(InvalidSyntax(
             self.current_token.initial_pos, self.current_token.final_pos,
-            "Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(' in -> "
+            f"Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(' in -> "
         ))
+
+    def call_func(self):
+        checker = ParserChecker()
+        atom = checker.check(self.atom())
+        if checker.error: return checker
+        
+        if self.current_token.type == TK_LPAREN:
+            checker.check_advance()
+            self.advance()
+            arguments_nodes = []
+
+            if self.current_token.type == TK_RPAREN:
+                checker.check_advance()
+                self.advance()
+            else:
+                arguments_nodes.append(checker.check(self.expr())) 
+                if checker.error: 
+                    return checker.check_fail(InvalidSyntax(
+                        self.current_token.initial_pos, self.current_token.final_pos,
+                        f"Expected ')', 'LET or let', while-loop, for-loop, INT, FLOAT, IDENTIFIER in  -> "
+                    ))
+                while self.current_token.type == TK_COMMA:
+                    checker.check_advance()
+                    self.advance()
+
+                    arguments_nodes.append(checker.check(self.expr()))
+                    if checker.error: return checker
+                
+                if self.current_token.type != TK_RPAREN:
+                    return checker.check_fail(InvalidSyntax(
+                        self.current_token.initial_pos, self.current_token.final_pos,
+                        f"Expected ')' in -> "
+                    ))
+                checker.check_advance()
+                self.advance()
+            return checker.check_pass(Node_call_func(atom, arguments_nodes))
+        return checker.check_pass(atom)
+
+            
+
+
     
     def power(self):
-        return self.bin_operator(self.atom, (TK_POW, ), self.factor)
+        return self.bin_operator(self.call_func, (TK_POW, ), self.factor)
 
     def factor(self):
         result = ParserChecker()
@@ -424,7 +578,7 @@ class Parser:
         if checker.error: 
             return checker.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
-                "Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(', 'NOT' in -> "
+                f"Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(', 'NOT' in -> "
             ))
         return checker.check_pass(node)
 
@@ -436,7 +590,7 @@ class Parser:
             if self.current_token.type != TK_IDENTIFIER:
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
-                    'Expected a valid variable name  in -> '
+                    f'Expected a valid variable name  in -> '
                 ))
             variable_name = self.current_token
             result.check_advance()
@@ -445,7 +599,7 @@ class Parser:
             if self.current_token.type != TK_EQUALS:
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
-                    "Expected '=' in -> "
+                    f"Expected '=' in -> "
                 ))
             result.check_advance()
             self.advance()
@@ -458,7 +612,7 @@ class Parser:
         if result.error: 
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
-                "Expected 'LET or let', INT, FLOAT, IDENTIFIER, '+', '-', or '(' in -> "
+                f"Expected 'LET or let', INT, FLOAT, IDENTIFIER, '+', '-', or '(' in -> "
             ))
         return result.check_pass(node)
 

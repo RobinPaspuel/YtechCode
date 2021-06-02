@@ -54,6 +54,8 @@ TK_CBL          = 'CBL'
 TK_CBR          = 'CBR'
 TK_SCOLON       = 'SCOLON'
 TK_COLON        = 'COLON'
+TK_ARROW        = 'ARROW'
+TK_COMMA        = 'COMMA'
 TK_EOF          = 'EOF'
 
 KEYWORDS = [
@@ -74,7 +76,9 @@ KEYWORDS = [
     'FOR',
     'for',
     'WHILE',
-    'while'
+    'while',
+    'DEF',
+    'def',
 ]
 ####################################
 
@@ -127,8 +131,7 @@ class Lexer:
                 tokens.append(Token(TK_PLUS, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '-':
-                tokens.append(Token(TK_MINUS, initial_pos = self.pos))
-                self.advance()
+                tokens.append(self.make_minus_or_equal())
             elif self.current_character == '*':
                 tokens.append(Token(TK_MUL, initial_pos = self.pos))
                 self.advance()
@@ -166,6 +169,10 @@ class Lexer:
             elif self.current_character == ':':
                 tokens.append(Token(TK_COLON))
                 self.advance()
+            elif self.current_character == ',': 
+                tokens.append(Token(TK_COMMA, initial_pos = self.pos))
+                self.advance()
+            
 
         
             else:
@@ -249,6 +256,15 @@ class Lexer:
             token_type = TK_GEQ
         return Token(token_type, initial_pos = initial_pos, final_pos = self.pos)
 
+    def make_minus_or_equal(self):
+        token_type = TK_MINUS
+        initial_pos = self.pos.copy()
+        self.advance()
+
+        if self.current_character == '>':
+            self.advance()
+            token_type = TK_ARROW
+        return Token(token_type, initial_pos = initial_pos, final_pos =self.pos)
 
 ##### Temporal run function #####
 

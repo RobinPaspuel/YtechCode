@@ -13,7 +13,7 @@ factor      : (PLUS|MINUS) factor
 
 power       : func_call (POW factor)*    
 
-func_call   : atom (LPAREN (expr (COMMA expr)*)(opt) RPAREN)(opt)
+func_call   : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
 
 atom        : INT|FLOAT|IDENTIFIER
             : LPAREN expr RPAREN
@@ -24,11 +24,12 @@ atom        : INT|FLOAT|IDENTIFIER
 
 if-stmt     : (KEYWORD: IF|KEYWORD: if) expr CBL expr CBR
             : ((KEYWORD: ELIF|KEYWORD: elif) expr CBL expr CBR)*
-            : ((KEYWORD: ELSE|KEYWORD: else) CBL expr CBR) opt
+            : ((KEYWORD: ELSE|KEYWORD: else) CBL expr CBR)?
 
 for-stmt    : (KEYWORD: FOR|KEYWORD: for) IDENTIFIER EQUALS expr COLON expr 
-              COLON expr (opt) CBL expr CBR
+              COLON expr? CBL expr CBR
 
 while-stmt  : (KEYWORD: WHILE|KEYWORD: while) expr CBL expr CBR
 
-def_func    : (KEYWORD: DEF|KEYWORD: def) IDENTIFIER(opt) LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)(opt) RPAREN CBL expr CBR
+def_func    : (KEYWORD: DEF|KEYWORD: def) IDENTIFIER LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN CBL expr CBR
+

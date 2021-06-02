@@ -20,8 +20,7 @@ class RunTimeChecker:
         self.error = error
         return self
 ############### CALCULATION LOGIC #############
-
-class Number:
+class Value:
     def __init__(self, value):
         self.value = value
         self.position()
@@ -35,18 +34,85 @@ class Number:
     def set_context(self, context=None):
         self.context = context
         return self
+    
+    def add_to(self, another_number):
+        return None, self.illegal_operation(another_number)
 
+    def sub_by(self, another_number):
+        return None, self.illegal_operation(another_number)
+    
+    def mul_by(self, another_number):
+        return None, self.illegal_operation(another_number)
+
+    def div_by(self, another_number):
+        return None, self.illegal_operation(another_number)
+    
+    def pow_by(self, another_number):
+        return None, self.illegal_operation(another_number)
+
+    def comparison_equal(self, another_number):
+        return None, self.illegal_operation(another_number)
+    
+    def comparison_notequal(self, another_number):
+        return None, self.illegal_operation(another_number)
+    
+    def comparison_less(self, another_number):
+        return None, self.illegal_operation(another_number)
+
+    def comparison_greater(self, another_number):
+        return None, self.illegal_operation(another_number)
+    
+    def comparison_leq(self, another_number):
+        return None, self.illegal_operation(another_number)
+    
+    def comparison_geq(self, another_number):
+        return None, self.illegal_operation(another_number)
+
+    def and_by(self, another_number):
+        return None, self.illegal_operation(another_number)
+
+    def or_by(self, another_number):
+        return None, self.illegal_operation(another_number)
+
+    def get_not(self):
+        return None, self.illegal_operation(self)
+    
+    def copy(self):
+        raise Exception('No copy method defined')
+
+    def is_true(self):
+        return False
+    
+    def illegal_operation(self, other=None):
+        if not other: other = self
+        return RunTimeError(
+            self.initial_pos, other.final_pos, 
+            'Illegal Operation', 
+            self.context
+        )
+
+    def execute(self):
+        return RunTimeChecker().check_fail(self.illegal_operation())
+
+class Number(Value):
+    
     def add_to(self, another_number):
         if isinstance(another_number, Number):
             return Number(self.value + another_number.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number) 
 
     def sub_by(self, another_number):
         if isinstance(another_number, Number):
             return Number(self.value - another_number.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
     
     def mul_by(self, another_number):
         if isinstance(another_number, Number):
             return Number(self.value * another_number.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
 
     def div_by(self, another_number):
         if isinstance(another_number, Number):
@@ -56,45 +122,66 @@ class Number:
                     'Division by zero!', self.context
                 )
             return Number(self.value / another_number.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
     
     def pow_by(self, another_number):
         if isinstance(another_number, Number):
             return Number(self.value ** another_number.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
 
     def comparison_equal(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value == another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
     
     def comparison_notequal(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value != another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
     
     def comparison_less(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value < another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
 
     def comparison_greater(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value > another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
     
     def comparison_leq(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value <= another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
     
     def comparison_geq(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value >= another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
 
     def and_by(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value and another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
 
     def or_by(self, another_number):
         if isinstance(another_number, Number):
             return Number(int(self.value or another_number.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, another_number)
 
     def get_not(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
+    
     
     def copy(self):
         copy = Number(self.value)
@@ -108,6 +195,51 @@ class Number:
     def __repr__(self):
         return str(self.value)
 
+################ FUNCTION CLASS ################
+class Function(Value):
+    def __init__(self, func_name, node_body, arguments_names):
+        #super().__init__()
+        self.func_name = func_name or "<nonamed>" #For future implementation of anonymous functions
+        self.node_body = node_body
+        self.arguments_names = arguments_names
+
+    def execute(self, arguments):
+        checker = RunTimeChecker()
+        interpreter = Interpreter() 
+        function_context = Context(self.func_name, self.context, self.initial_pos)
+        function_context.symbol_table = SymbolTable(function_context.context_parent.symbol_table)
+
+        if len(arguments) > len(self.arguments_names):
+            return checker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos, 
+                f"{len(arguments) - len(self.arguments_names)} exceeded number of arguments in '{self.func_name}'", 
+                self.context
+            ))
+        if len(arguments) < len(self.arguments_names):
+            return checker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos, 
+                f"{ len(self.arguments_names) - len(arguments)} lack of parameters in '{self.func_name}'", 
+                self.context
+            ))
+
+        for i in range(len(arguments)):
+            argument_name = self.arguments_names[i]
+            argument_value = arguments[i]
+            argument_value.set_context(function_context)
+            function_context.symbol_table.set(argument_name, argument_value)
+
+        value = checker.check(interpreter.visit(self.node_body, function_context))
+        if checker.error: return checker
+        return checker.check_pass(value)
+
+    def copy(self):
+        copy = Function(self.func_name, self.node_body, self.arguments_names)
+        copy.set_context(self.context)
+        copy.position(self.initial_pos, self.final_pos)
+        return copy
+
+    def __repr__(self):
+        return f"DEFINED: <function {self.func_name}>"
 
 ############## CONTEXT ########################
 		
@@ -121,9 +253,9 @@ class Context:
 ############### SYMBOL TABLE ##################
 
 class SymbolTable:
-    def __init__(self):
+    def __init__(self, parent = None):
         self.symbols ={}
-        self.parent = None
+        self.parent = parent
     
     def get(self, name):
         value = self.symbols.get(name, None)
@@ -298,8 +430,38 @@ class Interpreter:
         
         return checker.check_pass(None)
 
+    def visit_Node_Def_function(self, node, context):
+        checker = RunTimeChecker()
 
-### TEMPORAL RUN ###
+        function_name = node.variable_name_token.value if node.variable_name_token else None  ##Anonymous Functions
+        body_node = node.node_body
+        arguments_names = [arg_name.value for arg_name in node.arguments_token]
+        function_value = Function(function_name, body_node, arguments_names).set_context(context).position(node.initial_pos, node.final_pos)
+
+        if node.variable_name_token: #usefull when implementing anonymous functions
+            context.symbol_table.set(function_name, function_value)
+        return checker.check_pass(function_value)
+
+    def visit_Node_call_func(self, node, context):
+        checker = RunTimeChecker()
+        arguments = []
+
+        call_value = checker.check(self.visit(node.call_to_node, context))
+        if checker.error: return checker
+        call_value = call_value.copy().position(node.initial_pos, node.final_pos)
+
+        for node_argument in node.node_args:
+            arguments.append(checker.check(self.visit(node_argument, context)))
+            if checker.error: return checker
+        
+        return_val = checker.check(call_value.execute(arguments))
+        if checker.error: return checker
+
+        return checker.check_pass(return_val)
+
+
+
+########### TEMPORAL RUN ##################
 global_symbol_table = SymbolTable()
 global_symbol_table.set("null", Number(0))
 global_symbol_table.set("NULL", Number(0))
