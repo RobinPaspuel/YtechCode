@@ -567,7 +567,7 @@ class Parser:
     def comparison_expr(self):
         checker = ParserChecker()
 
-        if self.current_token.matches(TK_KEYWORD, 'NOT'):
+        if (self.current_token.matches(TK_KEYWORD, 'NOT')) or (self.current_token.matches(TK_KEYWORD, 'not')):
             relation_token = self.current_token
             checker.check_advance()
             self.advance()

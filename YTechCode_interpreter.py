@@ -359,7 +359,7 @@ class Interpreter:
 
         if node.operator_token.type == TK_MINUS:
             number, error = number.mul_by(Number(-1))
-        elif (self.operator_token.matches(TK_KEYWORD, 'NOT')) or (self.operator_token.matches(TK_KEYWORD, 'not')):
+        elif (node.operator_token.matches(TK_KEYWORD, 'NOT')) or (node.operator_token.matches(TK_KEYWORD, 'not')):
             number, error = number.get_not()
         
         if error: 
