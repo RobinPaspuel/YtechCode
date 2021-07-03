@@ -45,6 +45,8 @@ TK_DIV          = 'DIV'
 TK_POW          = 'POW'
 TK_LPAREN       = 'LPAREN'
 TK_RPAREN       = 'RPAREN'
+TK_LSPAREN      = 'LSRAPEN'
+TK_RSPAREN      = 'RSPAREN'
 TK_DEQ          = 'DEQ'
 TK_NDEQ         = 'NDEQ'
 TK_LL           = 'LL'
@@ -57,6 +59,7 @@ TK_SCOLON       = 'SCOLON'
 TK_COLON        = 'COLON'
 TK_ARROW        = 'ARROW'
 TK_COMMA        = 'COMMA'
+TK_PIPE         = 'PIPE'
 TK_EOF          = 'EOF'
 
 KEYWORDS = [
@@ -148,6 +151,12 @@ class Lexer:
             elif self.current_character == ')':
                 tokens.append(Token(TK_RPAREN, initial_pos = self.pos))
                 self.advance()
+            elif self.current_character == '[':
+                tokens.append(Token(TK_LSPAREN, initial_pos = self.pos))
+                self.advance()
+            elif self.current_character == ']':
+                tokens.append(Token(TK_RSPAREN, initial_pos = self.pos))
+                self.advance()
             elif self.current_character == ';':
                 tokens.append(Token(TK_SCOLON, initial_pos = self.pos))
                 self.advance()
@@ -168,14 +177,16 @@ class Lexer:
                 tokens.append(Token(TK_CBR, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == ':':
-                tokens.append(Token(TK_COLON))
+                tokens.append(Token(TK_COLON, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == ',': 
                 tokens.append(Token(TK_COMMA, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '"':
                 tokens.append(self.make_string())
-            
+            elif self.current_character == '|':
+                tokens.append(Token(TK_PIPE, initial_pos = self.pos))
+                self.advance()
 
         
             else:

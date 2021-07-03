@@ -76,6 +76,9 @@ class Value:
     def get_not(self, other):
         return None, self.illegal_operation(other)
     
+    def concat(self, other):
+        return None, self.illegal_operation(other)
+    
     def copy(self):
         raise Exception('No copy method defined')
 
@@ -279,6 +282,63 @@ class String(Value):
     def __repr__(self):
         return f'"{self.value}"'
     
+    
+################ LIST CLASS ####################
+class List(Value):
+    def __init__(self, list_elements):
+        super().__init__()
+        self.list_elements = list_elements
+        
+    def add_to(self, other):
+        new_list = self.copy()
+        new_list.list_elements.append(other)
+        return new_list, None
+
+    def sub_by(self, other):
+        if isinstance(other, Number):
+            new_list = self.copy()
+            try:
+                new_list.list_elements.pop(other.value)
+                return new_list, None
+            except:
+                return None, RunTimeError(
+                    other.initial_pos, other.final_pos, 
+                    'Index out of bounds <<element not removed>>',
+                    self.context
+                )
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def concat(self, other):
+        if isinstance(other, List):
+            new_list = self.copy()
+            new_list.list_elements.extend(other.list_elements)
+            return new_list, None
+        else:
+            return None, Value.illegal_operation(self, other)
+        
+    def div_by(self, other):
+        if isinstance(other, Number):
+            try:
+                return self.list_elements[other.value], None
+            except:
+                return None, RunTimeError(
+                    other.initial_pos, other.final_pos, 
+                    'Index out of bounds <<element not retrieved>>',
+                    self.context
+                )
+        else:
+            return None, Value.illegal_operation(self, other)
+        
+    def copy(self):
+        copy = List(self.list_elements[:])
+        copy.position(self.initial_pos, self.final_pos)
+        copy.set_context(self.context)
+        return copy
+    
+    def __repr__(self):
+        return f'[{", ".join([str(x) for x in self.list_elements])}]'
+
 ################ FUNCTION CLASS ################
 class Function(Value):
     def __init__(self, func_name, node_body, arguments_names):
@@ -375,6 +435,17 @@ class Interpreter:
         return checker.check_pass(
             String(node.token.value).set_context(context).position(node.initial_pos, node.final_pos))
         
+    def visit_Node_list(self, node, context):
+        checker = RunTimeChecker()
+        list_elements =[]
+        
+        for element in node.node_elements:
+            list_elements.append(checker.check(self.visit(element, context)))
+            if checker.error: return checker
+        
+        return checker.check_pass(
+            List(list_elements).set_context(context).position(node.initial_pos, node.final_pos)
+        )
 
     def visit_Node_VarDeclare(self, node, context):
         checker = RunTimeChecker()
@@ -428,6 +499,8 @@ class Interpreter:
             result, error = left.comparison_leq(right)
         elif node.operator_token.type == TK_GEQ:
             result, error = left.comparison_geq(right)
+        elif node.operator_token.type == TK_PIPE:
+            result, error = left.concat(right)
         elif (node.operator_token.matches(TK_KEYWORD, 'AND')) or (node.operator_token.matches(TK_KEYWORD, 'and')):
             result, error = left.and_by(right)
         elif (node.operator_token.matches(TK_KEYWORD, 'OR')) or (node.operator_token.matches(TK_KEYWORD, 'or')):
@@ -477,7 +550,7 @@ class Interpreter:
 
     def visit_Node_For(self, node, context):
         checker = RunTimeChecker()
-
+        list_elements = []
         start_value = checker.check(self.visit(node.node_start_value, context))
         if checker.error: return checker
 
@@ -501,23 +574,28 @@ class Interpreter:
             context.symbol_table.set(node.variable_name_token.value, Number(iter))
             iter += step_value.value
 
-            checker.check(self.visit(node.node_body, context))
+            list_elements.append(checker.check(self.visit(node.node_body, context)))
             if checker.error: return checker
         
-        return checker.check_pass(None)
+        return checker.check_pass(
+            List(list_elements).set_context(context).position(node.initial_pos, node.final_pos)
+        )
     
     def visit_Node_While(self, node, context):
         checker = RunTimeChecker()
+        list_elements = []
         while True:
             condition = checker.check(self.visit(node.node_condition, context))
             if checker.error: return checker
 
             if not condition.is_true(): break
 
-            checker.check(self.visit(node.node_body, context))
+            list_elements.append(checker.check(self.visit(node.node_body, context)))
             if checker.error: return checker
         
-        return checker.check_pass(None)
+        return checker.check_pass(
+            List(list_elements).set_context(context).position(node.initial_pos, node.final_pos)
+        )
 
     def visit_Node_Def_function(self, node, context):
         checker = RunTimeChecker()

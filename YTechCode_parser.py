@@ -20,6 +20,13 @@ class Node_string:
     def __repr__(self):
         return f'{self.token}'
 
+class Node_list:
+    def __init__(self, node_elements, initial_pos, final_pos):
+        self.node_elements = node_elements
+        self.initial_pos = initial_pos
+        self.final_pos = final_pos
+        
+
 class Node_VarDeclare:
     def __init__(self, variable_name_token):
         self.variable_name_token = variable_name_token
@@ -464,6 +471,48 @@ class Parser:
         return checker.check_pass(Node_If(if_elifs, else_case))
 
 
+    def list_stmt(self):
+        checker = ParserChecker()
+        node_elements = []
+        initial_pos = self.current_token.initial_pos.copy()
+        
+        if self.current_token.type != TK_LSPAREN:
+            return checker.check_fail(InvalidSyntax(
+                self.current_token.initial_pos, self.current_token.final_pos, 
+                f"Expected '[' in -> "
+            ))
+        checker.check_advance()
+        self.advance()
+        
+        if self.current_token.type == TK_RSPAREN:
+            checker.check_advance()
+            self.advance()
+        else:
+            node_elements.append(checker.check(self.expr())) 
+            if checker.error: 
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected ']', 'LET or let', while-loop, for-loop, INT, FLOAT, IDENTIFIER in  -> "
+                ))
+            while self.current_token.type == TK_COMMA:
+                checker.check_advance()
+                self.advance()
+
+                node_elements.append(checker.check(self.expr()))
+                if checker.error: return checker
+                
+            if self.current_token.type != TK_RSPAREN:
+                return checker.check_fail(InvalidSyntax(
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected ',' or ']' in -> "
+                ))
+            checker.check_advance()
+            self.advance()
+        
+        return checker.check_pass(Node_list(node_elements, initial_pos, self.current_token.final_pos.copy()))
+            
+        
+
     def atom(self):
         result = ParserChecker()
         token = self.current_token
@@ -497,6 +546,11 @@ class Parser:
                     self.current_token.initial_pos, self.current_token.final_pos,
                     f"Expected ')' in -> "
                 ))
+                
+        elif token.type == TK_LSPAREN:
+            list_stmt = result.check(self.list_stmt())
+            if result.error: return result
+            return result.check_pass(list_stmt)
 
         elif (token.matches(TK_KEYWORD, 'IF')) or (token.matches(TK_KEYWORD, 'if')):
             if_statement = result.check(self.if_statement())
@@ -520,7 +574,7 @@ class Parser:
 
         return result.check_fail(InvalidSyntax(
             self.current_token.initial_pos, self.current_token.final_pos,
-            f"Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(' in -> "
+            f"Expected INT, FLOAT, IDENTIFIER,  '+', '-', '(', '[' , 'FOR', 'WHILE' or 'DEF' in -> "
         ))
 
     def call_func(self):
@@ -559,10 +613,6 @@ class Parser:
                 self.advance()
             return checker.check_pass(Node_call_func(atom, arguments_nodes))
         return checker.check_pass(atom)
-
-            
-
-
     
     def power(self):
         return self.bin_operator(self.call_func, (TK_POW, ), self.factor)
@@ -571,7 +621,7 @@ class Parser:
         result = ParserChecker()
         token = self.current_token
 
-        if token.type in (TK_PLUS, TK_MINUS):
+        if token.type in (TK_PLUS, TK_MINUS, TK_PIPE):
             result.check_advance()
             self.advance()
             factor = result.check(self.factor())
@@ -579,9 +629,10 @@ class Parser:
             return result.check_pass(Node_Unitary_op(token, factor))
 
         return self.power()
+    
 
     def term(self):
-        return self.bin_operator(self.factor, (TK_MUL, TK_DIV))
+        return self.bin_operator(self.factor, (TK_MUL, TK_DIV, TK_PIPE))
 
     def arith_expr(self):
         return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))        
@@ -600,7 +651,7 @@ class Parser:
         if checker.error: 
             return checker.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
-                f"Expected INT, FLOAT, IDENTIFIER,  '+', '-' or '(', 'NOT' in -> "
+                f"Expected INT, FLOAT, IDENTIFIER,  '+', '-', '(', '[' or 'NOT' in -> "
             ))
         return checker.check_pass(node)
 
@@ -634,7 +685,7 @@ class Parser:
         if result.error: 
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
-                f"Expected 'LET or let', INT, FLOAT, IDENTIFIER, '+', '-', or '(' in -> "
+                f"Expected 'LET or let', INT, FLOAT, IDENTIFIER, '+', '-', '(', or '[' in -> "
             ))
         return result.check_pass(node)
 
