@@ -10,6 +10,15 @@ class Node_number:
 
     def __repr__(self):
         return f'{self.token}'
+    
+class Node_string:
+    def __init__(self, token):
+        self.token = token
+        self.initial_pos = self.token.initial_pos
+        self.final_pos = self.token.final_pos
+
+    def __repr__(self):
+        return f'{self.token}'
 
 class Node_VarDeclare:
     def __init__(self, variable_name_token):
@@ -25,6 +34,9 @@ class Node_VarAssign:
 
         self.initial_pos = self.variable_name_token.initial_pos
         self.final_pos = self.value_node.final_pos
+        
+    def __repr__(self):
+        return f'VARIABLE: {self.variable_name_token.value}: {self.value_node}'
 
 class Node_Binary_op:
     def __init__(self, left_node, operator_token, right_node):
@@ -58,8 +70,10 @@ class Node_If:
         self.final_pos = (self.else_case or self.if_elifs[len(self.if_elifs)-1][0]).final_pos
 
     def __repr__(self):
-        return f'({self.if_elifs}, {self.else_case})'
-
+        if len(self.if_elifs)==1:
+            return f'CONDITIONAL: ({self.if_elifs}), ELSE: ({self.else_case})'
+        else:
+            return f'CONDITIONALS: ({self.if_elifs}), ELSE: ({self.else_case})'
 class Node_For:
     def __init__(self, variable_name_token, node_start_value, node_final_value, node_step_value, node_body):
         self.variable_name_token = variable_name_token
@@ -72,7 +86,7 @@ class Node_For:
         self.final_pos = self.node_body.final_pos
 
     def __repr__(self):
-        return f"KEYWORD:FOR ({self.variable_name_token} = {self.node_start_value} : {self.node_final_value} : {self.node_step_value}) {'{'} {self.node_body} {'}'}"
+        return f"LOOP: FOR ({self.variable_name_token} = {self.node_start_value} : {self.node_final_value} : {self.node_step_value}) {'{'} {self.node_body} {'}'}"
 
 class Node_While:
     def __init__(self, node_condition, node_body):
@@ -83,7 +97,7 @@ class Node_While:
         self.final_pos = self.node_body.final_pos
 
     def __repr__(self):
-        return f"KEYWORD:WHILE ({self.node_condition}) {'{'}{self.node_body} {'}'}"
+        return f"LOOP: WHILE ({self.node_condition}) {'{'}{self.node_body} {'}'}"
 
 class Node_Def_function:
     def __init__(self, variable_name_token, arguments_token, node_body):
@@ -94,6 +108,9 @@ class Node_Def_function:
         self.initial_pos = self.variable_name_token.initial_pos
         self.final_pos = self.node_body.final_pos
 
+    def __repr__(self):
+        return f'FUNCTION: {self.variable_name_token.value}'   
+        
 class Node_call_func:
     def __init__(self, call_to_node, node_args):
         self.call_to_node = call_to_node
@@ -455,6 +472,11 @@ class Parser:
             result.check_advance()
             self.advance()
             return result.check_pass(Node_number(token))
+        
+        elif token.type == TK_STRING:
+            result.check_advance()
+            self.advance()
+            return result.check_pass(Node_string(token))
 
         elif token.type == TK_IDENTIFIER:
             result.check_advance()

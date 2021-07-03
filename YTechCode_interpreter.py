@@ -21,8 +21,7 @@ class RunTimeChecker:
         return self
 ############### CALCULATION LOGIC #############
 class Value:
-    def __init__(self, value):
-        self.value = value
+    def __init__(self):
         self.position()
         self.set_context()
 
@@ -35,53 +34,57 @@ class Value:
         self.context = context
         return self
     
-    def add_to(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def add_to(self, other):
+        return None, self.illegal_operation(other)
 
-    def sub_by(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def sub_by(self, other):
+        return None, self.illegal_operation(other)
     
-    def mul_by(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def mul_by(self, other):
+        return None, self.illegal_operation(other)
 
-    def div_by(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def div_by(self, other):
+        return None, self.illegal_operation(other)
     
-    def pow_by(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def pow_by(self, other):
+        return None, self.illegal_operation(other)
 
-    def comparison_equal(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def comparison_equal(self, other):
+        return None, self.illegal_operation(other)
     
-    def comparison_notequal(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def comparison_notequal(self, other):
+        return None, self.illegal_operation(other)
     
-    def comparison_less(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def comparison_less(self, other):
+        return None, self.illegal_operation(other)
 
-    def comparison_greater(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def comparison_greater(self, other):
+        return None, self.illegal_operation(other)
     
-    def comparison_leq(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def comparison_leq(self, other):
+        return None, self.illegal_operation(other)
     
-    def comparison_geq(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def comparison_geq(self, other):
+        return None, self.illegal_operation(other)
 
-    def and_by(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def and_by(self, other):
+        return None, self.illegal_operation(other)
 
-    def or_by(self, another_number):
-        return None, self.illegal_operation(another_number)
+    def or_by(self, other):
+        return None, self.illegal_operation(other)
 
-    def get_not(self):
-        return None, self.illegal_operation(self)
+    def get_not(self, other):
+        return None, self.illegal_operation(other)
     
     def copy(self):
         raise Exception('No copy method defined')
 
     def is_true(self):
         return False
+    
+
+    def execute(self):
+        return RunTimeChecker().check_fail(self.illegal_operation())
     
     def illegal_operation(self, other=None):
         if not other: other = self
@@ -91,93 +94,94 @@ class Value:
             self.context
         )
 
-    def execute(self):
-        return RunTimeChecker().check_fail(self.illegal_operation())
-
 class Number(Value):
     
-    def add_to(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(self.value + another_number.value).set_context(self.context), None
-        else:
-            return None, Value.illegal_operation(self, another_number) 
-
-    def sub_by(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(self.value - another_number.value).set_context(self.context), None
-        else:
-            return None, Value.illegal_operation(self, another_number)
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
     
-    def mul_by(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(self.value * another_number.value).set_context(self.context), None
+    def add_to(self, other):
+        if isinstance(other, Number):
+            return Number(self.value + other.value).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other) 
 
-    def div_by(self, another_number):
-        if isinstance(another_number, Number):
-            if another_number.value == 0:
+    def sub_by(self, other):
+        if isinstance(other, Number):
+            return Number(self.value - other.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+    
+    def mul_by(self, other):
+        if isinstance(other, Number):
+            return Number(self.value * other.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+
+    def div_by(self, other):
+        if isinstance(other, Number):
+            if other.value == 0:
                 return None, RunTimeError(
-                    another_number.initial_pos, another_number.final_pos,
+                    other.initial_pos, other.final_pos,
                     'Division by zero!', self.context
                 )
-            return Number(self.value / another_number.value).set_context(self.context), None
+            return Number(self.value / other.value).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
     
-    def pow_by(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(self.value ** another_number.value).set_context(self.context), None
+    def pow_by(self, other):
+        if isinstance(other, Number):
+            return Number(self.value ** other.value).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
 
-    def comparison_equal(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value == another_number.value)).set_context(self.context), None
+    def comparison_equal(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value == other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
     
-    def comparison_notequal(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value != another_number.value)).set_context(self.context), None
+    def comparison_notequal(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value != other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
     
-    def comparison_less(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value < another_number.value)).set_context(self.context), None
+    def comparison_less(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value < other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
 
-    def comparison_greater(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value > another_number.value)).set_context(self.context), None
+    def comparison_greater(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value > other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
     
-    def comparison_leq(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value <= another_number.value)).set_context(self.context), None
+    def comparison_leq(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value <= other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
     
-    def comparison_geq(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value >= another_number.value)).set_context(self.context), None
+    def comparison_geq(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value >= other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
 
-    def and_by(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value and another_number.value)).set_context(self.context), None
+    def and_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value and other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
 
-    def or_by(self, another_number):
-        if isinstance(another_number, Number):
-            return Number(int(self.value or another_number.value)).set_context(self.context), None
+    def or_by(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value or other.value)).set_context(self.context), None
         else:
-            return None, Value.illegal_operation(self, another_number)
+            return None, Value.illegal_operation(self, other)
 
     def get_not(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
@@ -194,11 +198,91 @@ class Number(Value):
     
     def __repr__(self):
         return str(self.value)
+    
+################ STRING CLASS ##################
+class String(Value):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+        
+    def add_to(self, other):
+        if isinstance(other, String):
+            return String(self.value + other.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+    
+    def mul_by(self, other):
+        if isinstance(other, Number):
+            return String(self.value * other.value).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+        
+    def comparison_equal(self, other):
+        if isinstance(other, String):
+            return Number(int(self.value == other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+    
+    def comparison_notequal(self, other):
+        if isinstance(other, String):
+            return Number(int(self.value != other.value)).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+    
+    def comparison_less(self, other):
+        if isinstance(other, String):
+            return Number(int(len(self.value) < len(other.value))).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
 
+    def comparison_greater(self, other):
+        if isinstance(other, String):
+            return Number(int(len(self.value) > len(other.value))).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other)
+        
+    def sub_by(self, other):
+        if isinstance(other, String):
+            if self.value == other.value or (len(self.value)!=(len(other.value))):
+                return None, Value.illegal_operation(self, other)
+            else:
+                self_array = []
+                other_array = []
+                string_diff =[]
+                separator = ''
+                for letter in self.value:
+                    self_array.append(letter)
+                for letter in other.value:
+                    other_array.append(letter)
+                for i in range(len(self_array)):
+                    if self_array[i] != other_array[i]:
+                        string_diff.append(self_array[i])
+                    else:
+                        pass
+                if len(string_diff)==0:
+                    return None, Value.illegal_operation(self, other)
+                else:
+                    string_diff = separator.join(string_diff)
+                    return String(string_diff).set_context(self.context), None
+            
+            
+            
+    def is_true(self):
+        return len(self.value) > 0
+    
+    def copy(self):
+        copy = String(self.value)
+        copy.set_context(self.context)
+        copy.position(self.initial_pos, self.final_pos)
+        return copy
+    
+    def __repr__(self):
+        return f'"{self.value}"'
+    
 ################ FUNCTION CLASS ################
 class Function(Value):
     def __init__(self, func_name, node_body, arguments_names):
-        #super().__init__()
+        super().__init__()
         self.func_name = func_name or "<nonamed>" #For future implementation of anonymous functions
         self.node_body = node_body
         self.arguments_names = arguments_names
@@ -284,8 +368,13 @@ class Interpreter:
     def visit_Node_number(self, node, context):
         checker = RunTimeChecker()
         return checker.check_pass(
-            Number(node.token.value).set_context(context).position(node.initial_pos, node.final_pos)
-            )
+            Number(node.token.value).set_context(context).position(node.initial_pos, node.final_pos))
+
+    def visit_Node_string(self, node, context):
+        checker = RunTimeChecker()
+        return checker.check_pass(
+            String(node.token.value).set_context(context).position(node.initial_pos, node.final_pos))
+        
 
     def visit_Node_VarDeclare(self, node, context):
         checker = RunTimeChecker()

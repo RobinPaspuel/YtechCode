@@ -34,6 +34,7 @@ class Position:
 ## DEFINING TOKENS FOR THE LANGUAGE ##
 TK_INT          = 'INT'
 TK_FLOAT        = 'FLOAT'
+TK_STRING       = 'STRING'
 TK_IDENTIFIER   = 'IDENTIFIER'
 TK_KEYWORD      = 'KEYWORD'
 TK_EQUALS       = 'EQUALS'
@@ -172,6 +173,8 @@ class Lexer:
             elif self.current_character == ',': 
                 tokens.append(Token(TK_COMMA, initial_pos = self.pos))
                 self.advance()
+            elif self.current_character == '"':
+                tokens.append(self.make_string())
             
 
         
@@ -265,6 +268,32 @@ class Lexer:
             self.advance()
             token_type = TK_ARROW
         return Token(token_type, initial_pos = initial_pos, final_pos =self.pos)
+
+    def make_string(self):
+        string = ''
+        initial_pos = self.pos.copy()
+        no_print_character = False
+        self.advance()
+        
+        no_print_characters = {
+            'n' : '\n',
+            't' : '\t'
+        }
+
+        while self.current_character != None and (self.current_character != '"' or no_print_character):
+            if no_print_character:
+                string += no_print_characters.get(self.current_character, self.current_character)
+            else:
+                if self.current_character == '\\':
+                    no_print_character = True
+                else:
+                    string += self.current_character
+            self.advance()
+            no_print_character = False
+        
+        self.advance()
+        return Token(TK_STRING, string, initial_pos = initial_pos, final_pos = self.pos)
+
 
 ##### Temporal run function #####
 

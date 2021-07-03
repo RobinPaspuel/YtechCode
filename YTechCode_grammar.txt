@@ -15,7 +15,7 @@ power       : func_call (POW factor)*
 
 func_call   : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
 
-atom        : int|float|IDENTIFIER
+atom        : INT|FLOAT|STRING|IDENTIFIER
             : LPAREN expr RPAREN
             : if-stmt
             : for-stmt
