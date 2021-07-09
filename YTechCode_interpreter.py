@@ -189,7 +189,7 @@ class Number(Value):
     def get_not(self):
         return Number(1 if self.value == 0 else 0).set_context(self.context), None
     
-    
+
     def copy(self):
         copy = Number(self.value)
         copy.position(self.initial_pos, self.final_pos)
@@ -202,6 +202,10 @@ class Number(Value):
     def __repr__(self):
         return str(self.value)
     
+
+Number.null = Number(0)
+Number.false = Number(0)
+Number.true = Number(1)
 ################ STRING CLASS ##################
 class String(Value):
     def __init__(self, value):
@@ -339,38 +343,62 @@ class List(Value):
     def __repr__(self):
         return f'[{", ".join([str(x) for x in self.list_elements])}]'
 
-################ FUNCTION CLASS ################
-class Function(Value):
-    def __init__(self, func_name, node_body, arguments_names):
+
+################ BASE CLASE FOR FUNCTIONS ##########
+class BaseFunction(Value):
+    def __init__(self, func_name):
         super().__init__()
-        self.func_name = func_name or "<nonamed>" #For future implementation of anonymous functions
+        self.func_name = func_name or "<nonamed>"
+
+    def generate_context(self):
+        function_context = Context(self.func_name, self.context, self.initial_pos)
+        function_context.symbol_table = SymbolTable(function_context.context_parent.symbol_table)
+        return function_context
+    
+    def check_arguments(self, arguments_names, arguments):
+        checker = RunTimeChecker()
+        if len(arguments) > len(arguments_names):
+            return checker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos, 
+                f"{len(arguments) - len(arguments_names)} exceeded number of arguments in '{self.func_name}'", 
+                self.context
+            ))
+        if len(arguments) < len(arguments_names):
+            return checker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos, 
+                f"{ len(arguments_names) - len(arguments)} lack of parameters in '{self.func_name}'", 
+                self.context
+            ))
+        return checker.check_pass(None)
+
+    def fill_args(self, arguments_names, arguments, exec_context):
+        for i in range(len(arguments)):
+            argument_name = arguments_names[i]
+            argument_value = arguments[i]
+            argument_value.set_context(exec_context)
+            exec_context.symbol_table.set(argument_name, argument_value)
+
+    def check_and_fill_args(self, arguments_names, arguments, exec_context):
+        checker = RunTimeChecker()
+        checker.check(self.check_arguments(arguments_names, arguments))
+        if checker.error: return checker
+        self.fill_args(arguments_names, arguments, exec_context)
+        return checker.check_pass(None)
+
+################ FUNCTION CLASS ################
+class Function(BaseFunction):
+    def __init__(self, func_name, node_body, arguments_names):
+        super().__init__(func_name)
         self.node_body = node_body
         self.arguments_names = arguments_names
 
     def execute(self, arguments):
         checker = RunTimeChecker()
         interpreter = Interpreter() 
-        function_context = Context(self.func_name, self.context, self.initial_pos)
-        function_context.symbol_table = SymbolTable(function_context.context_parent.symbol_table)
+        function_context = self.generate_context()
 
-        if len(arguments) > len(self.arguments_names):
-            return checker.check_fail(RunTimeError(
-                self.initial_pos, self.final_pos, 
-                f"{len(arguments) - len(self.arguments_names)} exceeded number of arguments in '{self.func_name}'", 
-                self.context
-            ))
-        if len(arguments) < len(self.arguments_names):
-            return checker.check_fail(RunTimeError(
-                self.initial_pos, self.final_pos, 
-                f"{ len(self.arguments_names) - len(arguments)} lack of parameters in '{self.func_name}'", 
-                self.context
-            ))
-
-        for i in range(len(arguments)):
-            argument_name = self.arguments_names[i]
-            argument_value = arguments[i]
-            argument_value.set_context(function_context)
-            function_context.symbol_table.set(argument_name, argument_value)
+        checker.check(self.check_and_fill_args(self.arguments_names, arguments, function_context))
+        if checker.error: return checker
 
         value = checker.check(interpreter.visit(self.node_body, function_context))
         if checker.error: return checker
@@ -630,12 +658,12 @@ class Interpreter:
 
 ########### TEMPORAL RUN ##################
 global_symbol_table = SymbolTable()
-global_symbol_table.set("null", Number(0))
-global_symbol_table.set("NULL", Number(0))
-global_symbol_table.set("false", Number(0))
-global_symbol_table.set("FALSE", Number(0))
-global_symbol_table.set("true", Number(1))
-global_symbol_table.set("TRUE", Number(1))
+global_symbol_table.set("null", Number.null)
+global_symbol_table.set("NULL", Number.null)
+global_symbol_table.set("false", Number.false)
+global_symbol_table.set("FALSE", Number.false)
+global_symbol_table.set("true", Number.true)
+global_symbol_table.set("TRUE", Number.true)
 
 
 def run(filename, string):
