@@ -7,6 +7,6 @@ while True:
     if string != '':
         result, error = YTechCode_interpreter.run('<stdin>',string)
         if error: print(error.error_string())
-        elif result: print(result)
+        elif result: print(repr(result))
     else:
         pass

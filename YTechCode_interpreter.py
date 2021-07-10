@@ -1,6 +1,7 @@
 from YTechCode_lexer import *
 from YTechCode_parser import *
-
+import os
+import math
 ############### RUN TIME CHECKER ##############
 
 class RunTimeChecker:
@@ -206,6 +207,7 @@ class Number(Value):
 Number.null = Number(0)
 Number.false = Number(0)
 Number.true = Number(1)
+Number.pi = Number(math.pi)
 ################ STRING CLASS ##################
 class String(Value):
     def __init__(self, value):
@@ -283,6 +285,9 @@ class String(Value):
         copy.position(self.initial_pos, self.final_pos)
         return copy
     
+    def __str__(self):
+        return self.value
+
     def __repr__(self):
         return f'"{self.value}"'
     
@@ -335,11 +340,14 @@ class List(Value):
             return None, Value.illegal_operation(self, other)
         
     def copy(self):
-        copy = List(self.list_elements[:])
+        copy = List(self.list_elements)
         copy.position(self.initial_pos, self.final_pos)
         copy.set_context(self.context)
         return copy
-    
+
+    def __str__(self):
+        return ", ".join([str(x) for x in self.list_elements])
+
     def __repr__(self):
         return f'[{", ".join([str(x) for x in self.list_elements])}]'
 
@@ -413,6 +421,220 @@ class Function(BaseFunction):
     def __repr__(self):
         return f"DEFINED: <function {self.func_name}>"
 
+############### BUILT-IN FUNCTION CLASS ##########
+class BuiltInFunction(BaseFunction):
+    def __init__(self, func_name):
+        super().__init__(func_name)
+
+    def execute(self, arguments):
+        checker = RunTimeChecker()
+        function_context = self.generate_context()
+
+        method_name = f'execute_{self.func_name}'
+        method = getattr(self, method_name, self.no_visit_method)
+
+        checker.check(self.check_and_fill_args(method.arguments_names, arguments, function_context))
+        if checker.error: return checker
+
+        value = checker.check(method(function_context))
+        if checker.error: return checker
+
+        return checker.check_pass(value)
+
+
+    def no_visit_method(self, node, context):
+        raise Exception(f'No execute_{self.func_name} method defined!')
+
+
+    def copy(self):
+        copy = BuiltInFunction(self.func_name)
+        copy.set_context(self.context)
+        copy.position(self.initial_pos, self.final_pos)
+        return copy
+
+    def __repr__(self):
+        return f"<Built-in function {self.func_name}>"
+
+    ############### DEFINITION OF THE BUILT-IN FUNCTIONS ####################333
+
+    def execute_print(self, function_context):
+        print(str(function_context.symbol_table.get('value')))
+        return RunTimeChecker().check_pass(Number.null)
+    execute_print.arguments_names = ['value']
+
+    def execute_input(self, function_context):
+        text = input()
+        return RunTimeChecker().check_pass(String(text))
+    execute_input.arguments_names = []
+
+    def execute_number(self, function_context):
+        text = str(function_context.symbol_table.get('value'))
+        try:
+            number = int(text)
+        except ValueError:
+            print(f"'{text}' not valid for conversion to number!")
+        return RunTimeChecker().check_pass(Number(text))
+    execute_number.arguments_names = ['value']
+
+    def execute_string(self, function_context):
+        text = (function_context.symbol_table.get('value'))
+        if not isinstance(text, BaseFunction):
+            return RunTimeChecker().check_pass(String(str(text)))
+        else:
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                'Cannot convert functions into strings',
+                function_context
+            ))
+    execute_string.arguments_names = ['value']
+
+    def execute_len(self, function_context):
+        text = function_context.symbol_table.get('value')
+        if isinstance(text, String):
+            text_len = len(str(text))
+            return RunTimeChecker().check_pass(Number(text_len))
+        elif isinstance(text, Number):
+            text_len = len(str(text))
+            return RunTimeChecker().check_pass(Number(text_len))
+        elif isinstance(text, List):
+            text_len = len(text.list_elements)
+            return RunTimeChecker().check_pass(Number(text_len))
+        else:
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                'Class <function> has not length',
+                function_context
+            ))
+    execute_len.arguments_names = ['value']
+
+    def execute_range(self, function_context):
+        number = str(function_context.symbol_table.get('value'))
+        try:
+            number = int(number)
+        except ValueError:
+            print(f"'{number}' not valid for number")
+        number_range = range(number)
+        return RunTimeChecker().check_pass(List(number_range))
+    execute_range.arguments_names = ['value']
+
+
+    def execute_clear(self, function_context):
+        os.system('cls' if os.name == "nt" else 'clear')
+        return RunTimeChecker().check_pass(Number.null)
+    execute_clear.arguments_names = []
+
+    def execute_typeof(self, function_context):
+        text = function_context.symbol_table.get('value')
+        if isinstance(text, Number):
+            text_type = "<class: Number>"
+        elif isinstance(text, String):
+            text_type = "<class: String>"
+        elif isinstance(text, List):
+            text_type = "<class: List>"
+        elif isinstance(text, Function):
+            text_type = "<class: Function>"
+        return RunTimeChecker().check_pass(String(text_type))
+    execute_typeof.arguments_names = ['value']
+
+    def execute_is_number(self, function_context):
+        is_number = isinstance(function_context.symbol_table.get("value"), Number)
+        return RunTimeChecker().check_pass(Number.true if is_number else Number.false)
+    execute_is_number.arguments_names = ['value']
+
+    def execute_is_string(self, function_context):
+        is_number = isinstance(function_context.symbol_table.get("value"), String)
+        return RunTimeChecker().check_pass(Number.true if is_number else Number.false)
+    execute_is_string.arguments_names = ['value']
+
+    def execute_is_list(self, function_context):
+        is_number = isinstance(function_context.symbol_table.get("value"), List)
+        return RunTimeChecker().check_pass(Number.true if is_number else Number.false)
+    execute_is_list.arguments_names = ['value']
+
+    def execute_is_function(self, function_context):
+        is_number = isinstance(function_context.symbol_table.get("value"), BaseFunction)
+        return RunTimeChecker().check_pass(Number.true if is_number else Number.false)
+    execute_is_function.arguments_names = ['value']
+
+    def execute_append(self, function_context):
+        list = function_context.symbol_table.get("list")
+        value = function_context.symbol_table.get("value")
+
+        if not isinstance(list, List):
+            return RunTimeChecker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                "First argument must be a list!",
+                function_context
+            ))
+        list.list_elements.append(value)
+        return RunTimeChecker().check_pass(Number.null)
+    execute_append.arguments_names = ['list', 'value']
+
+    def execute_pop(self, function_context):
+        list = function_context.symbol_table.get("list")
+        index = function_context.symbol_table.get("index")
+
+        if not isinstance(list, List):
+            return RunTimeChecker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                "First argument must be a list!",
+                function_context
+            ))
+        
+        if not isinstance(index, Number):
+            return RunTimeChecker.check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                "First argument must be a number!",
+                function_context
+            ))
+        try:
+            element = list.list_elements.pop(index.value)
+        except:
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                'Element at this index could not be removed <Index out of bounds>',
+                function_context
+            ))
+        return RunTimeChecker().check_pass(element)
+    execute_pop.arguments_names = ['list', 'index']
+
+    def execute_extend(self, function_context):
+        list_1 = function_context.symbol_table.get("list_1")
+        list_2 = function_context.symbol_table.get("list_2")
+
+        if not isinstance(list_1, List):
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                "First argument must be a list!",
+                function_context
+            ))
+        if not isinstance(list_2, List):
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                "Second argument must be a list!",
+                function_context
+            ))
+
+        list_1.list_elements.extend(list_2.list_elements)
+        return RunTimeChecker().check_pass(Number.null)
+    execute_extend.arguments_names = ["list_1", "list_2"]
+
+BuiltInFunction.print         = BuiltInFunction("print")  
+BuiltInFunction.input         = BuiltInFunction("input")
+BuiltInFunction.number        = BuiltInFunction("number")  
+BuiltInFunction.string        = BuiltInFunction("string")  
+BuiltInFunction.clear         = BuiltInFunction("clear")
+BuiltInFunction.typeof        = BuiltInFunction("typeof")  
+BuiltInFunction.is_number     = BuiltInFunction("is_number")
+BuiltInFunction.is_string     = BuiltInFunction("is_string")  
+BuiltInFunction.is_list       = BuiltInFunction("is_list")
+BuiltInFunction.is_function   = BuiltInFunction("is_function")  
+BuiltInFunction.len           = BuiltInFunction("len")  
+BuiltInFunction.range         = BuiltInFunction("range")  
+BuiltInFunction.append        = BuiltInFunction("append")
+BuiltInFunction.pop           = BuiltInFunction("pop")  
+BuiltInFunction.extend        = BuiltInFunction("extend")
+
 ############## CONTEXT ########################
 		
 class Context:
@@ -485,7 +707,7 @@ class Interpreter:
                 node.initial_pos, node.final_pos,
                 f"'{variable_name}' is not defined! ", context
             ))
-        value = value.copy().position(node.initial_pos, node.final_pos)
+        value = value.copy().position(node.initial_pos, node.final_pos).set_context(context)
         return checker.check_pass(value)
     
     def visit_Node_VarAssign(self, node, context):
@@ -652,6 +874,8 @@ class Interpreter:
         return_val = checker.check(call_value.execute(arguments))
         if checker.error: return checker
 
+        return_val = return_val.copy().position(node.initial_pos, node.final_pos).set_context(context)
+
         return checker.check_pass(return_val)
 
 
@@ -664,6 +888,22 @@ global_symbol_table.set("false", Number.false)
 global_symbol_table.set("FALSE", Number.false)
 global_symbol_table.set("true", Number.true)
 global_symbol_table.set("TRUE", Number.true)
+global_symbol_table.set("PI", Number.pi)
+global_symbol_table.set("print", BuiltInFunction.print)
+global_symbol_table.set("input", BuiltInFunction.input)
+global_symbol_table.set("number", BuiltInFunction.number)
+global_symbol_table.set("string", BuiltInFunction.string)
+global_symbol_table.set("clear", BuiltInFunction.clear)
+global_symbol_table.set("typeof", BuiltInFunction.typeof)
+global_symbol_table.set("is_number", BuiltInFunction.is_number)
+global_symbol_table.set("is_string", BuiltInFunction.is_string)
+global_symbol_table.set("is_list", BuiltInFunction.is_list)
+global_symbol_table.set("is_function", BuiltInFunction.is_function)
+global_symbol_table.set("len", BuiltInFunction.len)
+global_symbol_table.set("range", BuiltInFunction.range)
+global_symbol_table.set("append", BuiltInFunction.append)
+global_symbol_table.set("pop", BuiltInFunction.pop)
+global_symbol_table.set("extend", BuiltInFunction.extend)
 
 
 def run(filename, string):
