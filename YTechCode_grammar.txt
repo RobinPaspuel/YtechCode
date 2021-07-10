@@ -1,3 +1,5 @@
+statement   : NLINE* expr (NLINE expr)* NLINE*
+
 expr        : (KEYWORD:LET|KEYWORD:let) IDENTIFIER EQUALS expr
             : comp_expr ((KEYWORD:AND|KEYWORD:and|KEYWORD:OR|KEYWORD:or) comp_expr)*
 
@@ -25,16 +27,16 @@ atom        : INT|FLOAT|STRING|IDENTIFIER
 
 list-stmt   : LSPAREN (expr (COMMA expr)*)? RSPAREN
 
-if-stmt     : (KEYWORD: IF|KEYWORD: if) expr CBL expr CBR
-            : ((KEYWORD: ELIF|KEYWORD: elif) expr CBL expr CBR)*
-            : ((KEYWORD: ELSE|KEYWORD: else) CBL expr CBR)?
+if-stmt     : (KEYWORD: IF|KEYWORD: if) expr CBL (expr| statement*) CBR
+            : ((KEYWORD: ELIF|KEYWORD: elif) expr CBL (expr| statement*) CBR)*
+            : ((KEYWORD: ELSE|KEYWORD: else) CBL (expr| statement*) CBR)?
 
 for-stmt    : (KEYWORD: FOR|KEYWORD: for) IDENTIFIER EQUALS expr COLON expr 
-              COLON expr? CBL expr CBR
+              COLON expr? CBL (expr| statement*) CBR
 
-while-stmt  : (KEYWORD: WHILE|KEYWORD: while) expr CBL expr CBR
+while-stmt  : (KEYWORD: WHILE|KEYWORD: while) expr CBL (expr| statement*) CBR
 
-def_func    : (KEYWORD: DEF|KEYWORD: def) IDENTIFIER LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN CBL expr CBR
+def_func    : (KEYWORD: DEF|KEYWORD: def) IDENTIFIER LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN CBL (expr| statement*) CBR
 
 LPAREN      : '('
 

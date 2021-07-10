@@ -56,7 +56,7 @@ TK_LEQ          = 'LEQ'
 TK_GEQ          = 'GEQ'
 TK_CBL          = 'CBL'
 TK_CBR          = 'CBR'
-TK_SCOLON       = 'SCOLON'
+TK_NLINE       = 'NLINE'
 TK_COLON        = 'COLON'
 TK_ARROW        = 'ARROW'
 TK_COMMA        = 'COMMA'
@@ -158,8 +158,8 @@ class Lexer:
             elif self.current_character == ']':
                 tokens.append(Token(TK_RSPAREN, initial_pos = self.pos))
                 self.advance()
-            elif self.current_character == ';':
-                tokens.append(Token(TK_SCOLON, initial_pos = self.pos))
+            elif self.current_character == ';\n':
+                tokens.append(Token(TK_NLINE, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '!':
                 token, error = self.make_not_equal()
