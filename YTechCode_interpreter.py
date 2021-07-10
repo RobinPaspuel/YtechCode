@@ -619,6 +619,10 @@ class BuiltInFunction(BaseFunction):
         return RunTimeChecker().check_pass(Number.null)
     execute_extend.arguments_names = ["list_1", "list_2"]
 
+    def execute_exit(self, function_context):
+        quit()
+    execute_exit.arguments_names = []
+
 BuiltInFunction.print         = BuiltInFunction("print")  
 BuiltInFunction.input         = BuiltInFunction("input")
 BuiltInFunction.number        = BuiltInFunction("number")  
@@ -634,6 +638,7 @@ BuiltInFunction.range         = BuiltInFunction("range")
 BuiltInFunction.append        = BuiltInFunction("append")
 BuiltInFunction.pop           = BuiltInFunction("pop")  
 BuiltInFunction.extend        = BuiltInFunction("extend")
+BuiltInFunction.exit          = BuiltInFunction("exit")
 
 ############## CONTEXT ########################
 		
@@ -904,6 +909,8 @@ global_symbol_table.set("range", BuiltInFunction.range)
 global_symbol_table.set("append", BuiltInFunction.append)
 global_symbol_table.set("pop", BuiltInFunction.pop)
 global_symbol_table.set("extend", BuiltInFunction.extend)
+global_symbol_table.set("exit", BuiltInFunction.exit)
+
 
 
 def run(filename, string):
