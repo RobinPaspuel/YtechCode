@@ -84,6 +84,9 @@ KEYWORDS = [
     'while',
     'DEF',
     'def',
+    'break',
+    'next',
+    'return'
 ]
 ####################################
 
