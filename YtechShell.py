@@ -10,6 +10,10 @@ while True:
     if string != '':
         result, error = YTechCode_interpreter.run('<stdin>',string)
         if error: print(error.error_string())
-        elif result: print(repr(result))
+        elif result: 
+            if len(result.list_elements) ==1:
+                print(repr(result.list_elements[0]))
+            else:
+                print(repr(result))
     else:
         pass
