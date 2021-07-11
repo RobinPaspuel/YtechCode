@@ -10,8 +10,8 @@ class RunTimeChecker:
         self.error = None
     
     def check(self, result):
-        if result.error: self.error = result.error
-        return result.value
+            if result.error: self.error = result.error
+            return result.value
 
     def check_pass(self, value):
         self.value = value
@@ -100,25 +100,26 @@ class Value:
 
 class Number(Value):
     
-    def __init__(self, value):
+    def __init__(self, value, show_repr=False):
         super().__init__()
         self.value = value
+        self.show_repr = show_repr
     
     def add_to(self, other):
         if isinstance(other, Number):
-            return Number(self.value + other.value).set_context(self.context), None
+            return Number(self.value + other.value, True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other) 
 
     def sub_by(self, other):
         if isinstance(other, Number):
-            return Number(self.value - other.value).set_context(self.context), None
+            return Number(self.value - other.value, True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def mul_by(self, other):
         if isinstance(other, Number):
-            return Number(self.value * other.value).set_context(self.context), None
+            return Number(self.value * other.value, True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
@@ -129,70 +130,70 @@ class Number(Value):
                     other.initial_pos, other.final_pos,
                     'Division by zero!', self.context
                 )
-            return Number(self.value / other.value).set_context(self.context), None
+            return Number(self.value / other.value, True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def pow_by(self, other):
         if isinstance(other, Number):
-            return Number(self.value ** other.value).set_context(self.context), None
+            return Number(self.value ** other.value, True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
     def comparison_equal(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value == other.value)).set_context(self.context), None
+            return Number(int(self.value == other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def comparison_notequal(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value != other.value)).set_context(self.context), None
+            return Number(int(self.value != other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def comparison_less(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value < other.value)).set_context(self.context), None
+            return Number(int(self.value < other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
     def comparison_greater(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value > other.value)).set_context(self.context), None
+            return Number(int(self.value > other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def comparison_leq(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value <= other.value)).set_context(self.context), None
+            return Number(int(self.value <= other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def comparison_geq(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value >= other.value)).set_context(self.context), None
+            return Number(int(self.value >= other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
     def and_by(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value and other.value)).set_context(self.context), None
+            return Number(int(self.value and other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
     def or_by(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value or other.value)).set_context(self.context), None
+            return Number(int(self.value or other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
     def get_not(self):
-        return Number(1 if self.value == 0 else 0).set_context(self.context), None
+        return Number(1 if self.value == 0 else 0, True).set_context(self.context), None
     
 
     def copy(self):
-        copy = Number(self.value)
+        copy = Number(self.value, self.show_repr)
         copy.position(self.initial_pos, self.final_pos)
         copy.set_context(self.context)
         return copy
@@ -201,13 +202,17 @@ class Number(Value):
         return self.value != 0
     
     def __repr__(self):
-        return str(self.value)
+        if self.show_repr:
+            return str(self.value)
+        else:
+            return f''
     
 
-Number.null = Number(0)
-Number.false = Number(0)
-Number.true = Number(1)
-Number.pi = Number(math.pi)
+Number.null = Number(0, False)
+Number.false = Number(0, True)
+Number.true = Number(1, True)
+Number.pi = Number(math.pi, True)
+
 ################ STRING CLASS ##################
 class String(Value):
     def __init__(self, value):
@@ -228,25 +233,25 @@ class String(Value):
         
     def comparison_equal(self, other):
         if isinstance(other, String):
-            return Number(int(self.value == other.value)).set_context(self.context), None
+            return Number(int(self.value == other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def comparison_notequal(self, other):
         if isinstance(other, String):
-            return Number(int(self.value != other.value)).set_context(self.context), None
+            return Number(int(self.value != other.value), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
     
     def comparison_less(self, other):
         if isinstance(other, String):
-            return Number(int(len(self.value) < len(other.value))).set_context(self.context), None
+            return Number(int(len(self.value) < len(other.value)), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
 
     def comparison_greater(self, other):
         if isinstance(other, String):
-            return Number(int(len(self.value) > len(other.value))).set_context(self.context), None
+            return Number(int(len(self.value) > len(other.value)), True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
         
@@ -291,12 +296,14 @@ class String(Value):
     def __repr__(self):
         return f'"{self.value}"'
     
-    
+
+
 ################ LIST CLASS ####################
 class List(Value):
-    def __init__(self, list_elements):
+    def __init__(self, list_elements, show_elements):
         super().__init__()
         self.list_elements = list_elements
+        self.show_elements = show_elements
         
     def add_to(self, other):
         new_list = self.copy()
@@ -340,7 +347,7 @@ class List(Value):
             return None, Value.illegal_operation(self, other)
         
     def copy(self):
-        copy = List(self.list_elements)
+        copy = List(self.list_elements, self.show_elements)
         copy.position(self.initial_pos, self.final_pos)
         copy.set_context(self.context)
         return copy
@@ -349,8 +356,10 @@ class List(Value):
         return ", ".join([str(x) for x in self.list_elements])
 
     def __repr__(self):
-        return f'[{", ".join([str(x) for x in self.list_elements])}]'
-
+        if self.show_elements:
+            return f'[{", ".join([str(x) for x in self.list_elements])}]'
+        else:
+            return f""
 
 ################ BASE CLASE FOR FUNCTIONS ##########
 class BaseFunction(Value):
@@ -395,10 +404,11 @@ class BaseFunction(Value):
 
 ################ FUNCTION CLASS ################
 class Function(BaseFunction):
-    def __init__(self, func_name, node_body, arguments_names):
+    def __init__(self, func_name, node_body, arguments_names, return_null):
         super().__init__(func_name)
         self.node_body = node_body
         self.arguments_names = arguments_names
+        self.return_null = return_null
 
     def execute(self, arguments):
         checker = RunTimeChecker()
@@ -410,16 +420,19 @@ class Function(BaseFunction):
 
         value = checker.check(interpreter.visit(self.node_body, function_context))
         if checker.error: return checker
-        return checker.check_pass(value)
+        return checker.check_pass(Number.null if self.return_null else value)
 
     def copy(self):
-        copy = Function(self.func_name, self.node_body, self.arguments_names)
+        copy = Function(self.func_name, self.node_body, self.arguments_names, self.return_null)
         copy.set_context(self.context)
         copy.position(self.initial_pos, self.final_pos)
         return copy
 
     def __repr__(self):
-        return f"DEFINED: <function {self.func_name}>"
+        return f"<function {self.func_name}>"
+    
+    def __str__(self):
+        return f'<function {self.func_name}>'
 
 ############### BUILT-IN FUNCTION CLASS ##########
 class BuiltInFunction(BaseFunction):
@@ -460,6 +473,7 @@ class BuiltInFunction(BaseFunction):
     def execute_print(self, function_context):
         print(str(function_context.symbol_table.get('value')))
         return RunTimeChecker().check_pass(Number.null)
+
     execute_print.arguments_names = ['value']
 
     def execute_input(self, function_context):
@@ -683,7 +697,7 @@ class Interpreter:
     def visit_Node_number(self, node, context):
         checker = RunTimeChecker()
         return checker.check_pass(
-            Number(node.token.value).set_context(context).position(node.initial_pos, node.final_pos))
+            Number(node.token.value, True).set_context(context).position(node.initial_pos, node.final_pos))
 
     def visit_Node_string(self, node, context):
         checker = RunTimeChecker()
@@ -699,7 +713,7 @@ class Interpreter:
             if checker.error: return checker
         
         return checker.check_pass(
-            List(list_elements).set_context(context).position(node.initial_pos, node.final_pos)
+            List(list_elements, True).set_context(context).position(node.initial_pos, node.final_pos)
         )
 
     def visit_Node_VarDeclare(self, node, context):
@@ -775,7 +789,7 @@ class Interpreter:
         error = None
 
         if node.operator_token.type == TK_MINUS:
-            number, error = number.mul_by(Number(-1))
+            number, error = number.mul_by(Number(-1, True))
         elif (node.operator_token.matches(TK_KEYWORD, 'NOT')) or (node.operator_token.matches(TK_KEYWORD, 'not')):
             number, error = number.get_not()
         
@@ -787,21 +801,22 @@ class Interpreter:
     def visit_Node_If(self, node, context):
         checker = RunTimeChecker()
 
-        for initial_cond, expr in node.if_elifs:
+        for initial_cond, expr, return_null in node.if_elifs:
             initial_cond_value = checker.check(self.visit(initial_cond, context))
             if checker.error: return checker
             
             if initial_cond_value.is_true():
                 expr_value = checker.check(self.visit(expr, context))
                 if checker.error: return checker
-                return checker.check_pass(expr_value)
+                return checker.check_pass(Number.null if return_null else expr_value)
             
         if node.else_case: 
-            else_value = checker.check(self.visit(node.else_case, context))
+            expr, return_null = node.else_case
+            else_value = checker.check(self.visit(expr, context))
             if checker.error: return checker
-            return checker.check_pass(else_value)
+            return checker.check_pass(Number.null if return_null else else_value)
         
-        return checker.check_pass(None)
+        return checker.check_pass(Number.null)
 
     def visit_Node_For(self, node, context):
         checker = RunTimeChecker()
@@ -816,7 +831,7 @@ class Interpreter:
             step_value = checker.check(self.visit(node.node_step_value, context))
             if checker.error: return checker
         else:
-            step_value = Number(1)
+            step_value = Number(1, False)
         
         iter = start_value.value
 
@@ -826,14 +841,15 @@ class Interpreter:
             condition = lambda: iter > final_value.value
         
         while condition():
-            context.symbol_table.set(node.variable_name_token.value, Number(iter))
+            context.symbol_table.set(node.variable_name_token.value, Number(iter, False))
             iter += step_value.value
 
             list_elements.append(checker.check(self.visit(node.node_body, context)))
             if checker.error: return checker
         
         return checker.check_pass(
-            List(list_elements).set_context(context).position(node.initial_pos, node.final_pos)
+            Number.null if node.return_null else
+            List(list_elements, False).set_context(context).position(node.initial_pos, node.final_pos)
         )
     
     def visit_Node_While(self, node, context):
@@ -849,7 +865,8 @@ class Interpreter:
             if checker.error: return checker
         
         return checker.check_pass(
-            List(list_elements).set_context(context).position(node.initial_pos, node.final_pos)
+            Number.null if node.return_null else
+            List(list_elements, False).set_context(context).position(node.initial_pos, node.final_pos)
         )
 
     def visit_Node_Def_function(self, node, context):
@@ -858,7 +875,7 @@ class Interpreter:
         function_name = node.variable_name_token.value if node.variable_name_token else None  ##Anonymous Functions
         body_node = node.node_body
         arguments_names = [arg_name.value for arg_name in node.arguments_token]
-        function_value = Function(function_name, body_node, arguments_names).set_context(context).position(node.initial_pos, node.final_pos)
+        function_value = Function(function_name, body_node, arguments_names, node.return_null).set_context(context).position(node.initial_pos, node.final_pos)
 
         if node.variable_name_token: #usefull when implementing anonymous functions
             context.symbol_table.set(function_name, function_value)
