@@ -56,7 +56,7 @@ TK_LEQ          = 'LEQ'
 TK_GEQ          = 'GEQ'
 TK_CBL          = 'CBL'
 TK_CBR          = 'CBR'
-TK_NLINE       = 'NLINE'
+TK_NLINE        = 'NLINE'
 TK_COLON        = 'COLON'
 TK_ARROW        = 'ARROW'
 TK_COMMA        = 'COMMA'
@@ -128,6 +128,9 @@ class Lexer:
         while self.current_character != None:
             if self.current_character in ' \t': #Ignoring tab and spaces
                 self.advance()
+            elif self.current_character in ';\n':
+                tokens.append(Token(TK_NLINE, initial_pos = self.pos))
+                self.advance()
             elif self.current_character in DIGITS:  ##WE define what a number is in the number method
                 tokens.append(self.make_number())
             elif self.current_character in LETTERS:
@@ -157,9 +160,6 @@ class Lexer:
                 self.advance()
             elif self.current_character == ']':
                 tokens.append(Token(TK_RSPAREN, initial_pos = self.pos))
-                self.advance()
-            elif self.current_character == ';\n':
-                tokens.append(Token(TK_NLINE, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '!':
                 token, error = self.make_not_equal()
