@@ -6,20 +6,54 @@ import math
 
 class RunTimeChecker:
     def __init__(self):
+        self.initial_values()
+
+    def initial_values(self):
         self.value = None
         self.error = None
+        self.return_value = None
+        self.loop_next = False
+        self.loop_break = False
     
     def check(self, result):
-            if result.error: self.error = result.error
+            self.error = result.error
+            self.return_value = result.return_value
+            self.loop_next = result.loop_next
+            self.loop_break = result.loop_break
             return result.value
 
     def check_pass(self, value):
+        self.initial_values()
         self.value = value
         return self
 
+    def check_pass_return(self, value):
+        self.initial_values()
+        self.return_value = value
+        return self
+    
+    def check_pass_next(self):
+        self.initial_values()
+        self.loop_next = True
+        return self
+
+    def check_pass_break(self):
+        self.initial_values()
+        self.loop_break = True
+        return self
+
     def check_fail(self, error):
+        self.initial_values()
         self.error = error
         return self
+
+    def should_return(self):
+        return (
+            self.error or
+            self.return_value or
+            self.loop_next or 
+            self.loop_break
+        )
 ############### CALCULATION LOGIC #############
 class Value:
     def __init__(self):
@@ -356,8 +390,10 @@ class List(Value):
         return ", ".join([str(x) for x in self.list_elements])
 
     def __repr__(self):
-        if self.show_elements:
+        if self.show_elements == True:
             return f'[{", ".join([str(x) for x in self.list_elements])}]'
+        elif self.show_elements == "last":
+            return f'[{self.list_elements[-1]}]'
         else:
             return f""
 
@@ -398,17 +434,17 @@ class BaseFunction(Value):
     def check_and_fill_args(self, arguments_names, arguments, exec_context):
         checker = RunTimeChecker()
         checker.check(self.check_arguments(arguments_names, arguments))
-        if checker.error: return checker
+        if checker.should_return(): return checker
         self.fill_args(arguments_names, arguments, exec_context)
         return checker.check_pass(None)
 
 ################ FUNCTION CLASS ################
 class Function(BaseFunction):
-    def __init__(self, func_name, node_body, arguments_names, return_null):
+    def __init__(self, func_name, node_body, arguments_names, return_self_value):
         super().__init__(func_name)
         self.node_body = node_body
         self.arguments_names = arguments_names
-        self.return_null = return_null
+        self.return_self_value = return_self_value
 
     def execute(self, arguments):
         checker = RunTimeChecker()
@@ -416,14 +452,16 @@ class Function(BaseFunction):
         function_context = self.generate_context()
 
         checker.check(self.check_and_fill_args(self.arguments_names, arguments, function_context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         value = checker.check(interpreter.visit(self.node_body, function_context))
-        if checker.error: return checker
-        return checker.check_pass(Number.null if self.return_null else value)
+        if checker.should_return() and checker.return_value == None: return checker
+        
+        return_value = (value if self.return_self_value else None) or checker.return_value or Number.null
+        return checker.check_pass(return_value)
 
     def copy(self):
-        copy = Function(self.func_name, self.node_body, self.arguments_names, self.return_null)
+        copy = Function(self.func_name, self.node_body, self.arguments_names, self.return_self_value)
         copy.set_context(self.context)
         copy.position(self.initial_pos, self.final_pos)
         return copy
@@ -447,10 +485,10 @@ class BuiltInFunction(BaseFunction):
         method = getattr(self, method_name, self.no_visit_method)
 
         checker.check(self.check_and_fill_args(method.arguments_names, arguments, function_context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         value = checker.check(method(function_context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         return checker.check_pass(value)
 
@@ -506,13 +544,13 @@ class BuiltInFunction(BaseFunction):
         text = function_context.symbol_table.get('value')
         if isinstance(text, String):
             text_len = len(str(text))
-            return RunTimeChecker().check_pass(Number(text_len))
+            return RunTimeChecker().check_pass(Number(text_len, True))
         elif isinstance(text, Number):
             text_len = len(str(text))
-            return RunTimeChecker().check_pass(Number(text_len))
+            return RunTimeChecker().check_pass(Number(text_len, True))
         elif isinstance(text, List):
             text_len = len(text.list_elements)
-            return RunTimeChecker().check_pass(Number(text_len))
+            return RunTimeChecker().check_pass(Number(text_len, True))
         else:
             return RunTimeChecker().check_fail(RunTimeError(
                 self.initial_pos, self.final_pos,
@@ -528,7 +566,7 @@ class BuiltInFunction(BaseFunction):
         except ValueError:
             print(f"'{number}' not valid for number")
         number_range = range(number)
-        return RunTimeChecker().check_pass(List(number_range))
+        return RunTimeChecker().check_pass(List(number_range, "last"))
     execute_range.arguments_names = ['value']
 
 
@@ -710,7 +748,7 @@ class Interpreter:
         
         for element in node.node_elements:
             list_elements.append(checker.check(self.visit(element, context)))
-            if checker.error: return checker
+            if checker.should_return(): return checker
         
         return checker.check_pass(
             List(list_elements, True).set_context(context).position(node.initial_pos, node.final_pos)
@@ -733,7 +771,7 @@ class Interpreter:
         checker = RunTimeChecker()
         variable_name= node.variable_name_token.value
         value =  checker.check(self.visit(node.value_node, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         context.symbol_table.set(variable_name, value)
         return checker.check_pass(value)
@@ -742,9 +780,9 @@ class Interpreter:
         checker = RunTimeChecker()
 
         left = checker.check(self.visit(node.left_node, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
         right = checker.check(self.visit(node.right_node, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         if node.operator_token.type == TK_PLUS:
             result, error = left.add_to(right)
@@ -784,7 +822,7 @@ class Interpreter:
         checker = RunTimeChecker()
         
         number = checker.check(self.visit(node.node, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         error = None
 
@@ -803,17 +841,17 @@ class Interpreter:
 
         for initial_cond, expr, return_null in node.if_elifs:
             initial_cond_value = checker.check(self.visit(initial_cond, context))
-            if checker.error: return checker
+            if checker.should_return(): return checker
             
             if initial_cond_value.is_true():
                 expr_value = checker.check(self.visit(expr, context))
-                if checker.error: return checker
+                if checker.should_return(): return checker
                 return checker.check_pass(Number.null if return_null else expr_value)
             
         if node.else_case: 
             expr, return_null = node.else_case
             else_value = checker.check(self.visit(expr, context))
-            if checker.error: return checker
+            if checker.should_return(): return checker
             return checker.check_pass(Number.null if return_null else else_value)
         
         return checker.check_pass(Number.null)
@@ -822,14 +860,14 @@ class Interpreter:
         checker = RunTimeChecker()
         list_elements = []
         start_value = checker.check(self.visit(node.node_start_value, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         final_value = checker.check(self.visit(node.node_final_value, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         if node.node_step_value: 
             step_value = checker.check(self.visit(node.node_step_value, context))
-            if checker.error: return checker
+            if checker.should_return(): return checker
         else:
             step_value = Number(1, False)
         
@@ -841,29 +879,43 @@ class Interpreter:
             condition = lambda: iter > final_value.value
         
         while condition():
-            context.symbol_table.set(node.variable_name_token.value, Number(iter, False))
+            context.symbol_table.set(node.variable_name_token.value, Number(iter, True))
             iter += step_value.value
 
-            list_elements.append(checker.check(self.visit(node.node_body, context)))
-            if checker.error: return checker
-        
+            value = checker.check(self.visit(node.node_body, context))
+            if checker.should_return() and checker.loop_next == False and checker.loop_break == False: return checker
+
+            if checker.loop_next:
+                continue
+            if checker.loop_break:
+                break
+
+            list_elements.append(value)
+
         return checker.check_pass(
             Number.null if node.return_null else
             List(list_elements, False).set_context(context).position(node.initial_pos, node.final_pos)
-        )
+)
     
     def visit_Node_While(self, node, context):
         checker = RunTimeChecker()
         list_elements = []
         while True:
             condition = checker.check(self.visit(node.node_condition, context))
-            if checker.error: return checker
+            if checker.should_return(): return checker
 
             if not condition.is_true(): break
 
-            list_elements.append(checker.check(self.visit(node.node_body, context)))
-            if checker.error: return checker
+            value = checker.check(self.visit(node.node_body, context))
+            if checker.should_return() and checker.loop_next == False and checker.loop_break == False: return checker
         
+            if checker.loop_next:
+                continue
+            if checker.loop_break:
+                break
+            
+            list_elements.append(value)
+
         return checker.check_pass(
             Number.null if node.return_null else
             List(list_elements, False).set_context(context).position(node.initial_pos, node.final_pos)
@@ -875,7 +927,7 @@ class Interpreter:
         function_name = node.variable_name_token.value if node.variable_name_token else None  ##Anonymous Functions
         body_node = node.node_body
         arguments_names = [arg_name.value for arg_name in node.arguments_token]
-        function_value = Function(function_name, body_node, arguments_names, node.return_null).set_context(context).position(node.initial_pos, node.final_pos)
+        function_value = Function(function_name, body_node, arguments_names, node.return_self_value).set_context(context).position(node.initial_pos, node.final_pos)
 
         if node.variable_name_token: #usefull when implementing anonymous functions
             context.symbol_table.set(function_name, function_value)
@@ -886,21 +938,38 @@ class Interpreter:
         arguments = []
 
         call_value = checker.check(self.visit(node.call_to_node, context))
-        if checker.error: return checker
+        if checker.should_return(): return checker
         call_value = call_value.copy().position(node.initial_pos, node.final_pos)
 
         for node_argument in node.node_args:
             arguments.append(checker.check(self.visit(node_argument, context)))
-            if checker.error: return checker
+            if checker.should_return(): return checker
         
         return_val = checker.check(call_value.execute(arguments))
-        if checker.error: return checker
+        if checker.should_return(): return checker
 
         return_val = return_val.copy().position(node.initial_pos, node.final_pos).set_context(context)
 
         return checker.check_pass(return_val)
 
+    def visit_Node_return(self, node, context):
+        checker = RunTimeChecker()
 
+        if node.return_node:
+            value = checker.check(self.visit(node.return_node, context))
+            if checker.should_return(): return checker
+        else:
+            value = Number.null
+        
+        return checker.check_pass_return(value)
+
+    def visit_Node_next(self, node, context):
+        checker = RunTimeChecker()
+        return checker.check_pass_next()
+
+    def visit_Node_break(self, node, context):
+        checker = RunTimeChecker()
+        return checker.check_pass_break()
 
 ########### TEMPORAL RUN ##################
 global_symbol_table = SymbolTable()
