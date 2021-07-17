@@ -84,6 +84,9 @@ class Value:
     def pow_by(self, other):
         return None, self.illegal_operation(other)
 
+    def mod(self, other):
+        return None, self.illegal_operation(other)
+
     def comparison_equal(self, other):
         return None, self.illegal_operation(other)
     
@@ -173,6 +176,12 @@ class Number(Value):
             return Number(self.value ** other.value, True).set_context(self.context), None
         else:
             return None, Value.illegal_operation(self, other)
+
+    def mod(self, other):
+        if isinstance(other, Number):
+            return Number(self.value % other.value, True).set_context(self.context), None
+        else:
+            return None, Value.illegal_operation(self, other, other)
 
     def comparison_equal(self, other):
         if isinstance(other, Number):
@@ -703,7 +712,7 @@ class BuiltInFunction(BaseFunction):
                 f"Failed to execute the program \"{filename}\"\n" + error.error_string(),
                 function_context
             ))
-        return RunTimeChecker.check_pass(Number.null)
+        return RunTimeChecker().check_pass(Number.null)
 
     execute_run.arguments_names = ["filename"]
 
@@ -842,6 +851,8 @@ class Interpreter:
             result, error = left.comparison_geq(right)
         elif node.operator_token.type == TK_PIPE:
             result, error = left.concat(right)
+        elif node.operator_token.type == TK_MOD:
+            result, error = left.mod(right)
         elif (node.operator_token.matches(TK_KEYWORD, 'AND')) or (node.operator_token.matches(TK_KEYWORD, 'and')):
             result, error = left.and_by(right)
         elif (node.operator_token.matches(TK_KEYWORD, 'OR')) or (node.operator_token.matches(TK_KEYWORD, 'or')):
