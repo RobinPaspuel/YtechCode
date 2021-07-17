@@ -527,7 +527,9 @@ class Parser:
     def if_elif_or_else(self):
         checker=ParserChecker()
         cases, else_case = [], None
-
+        if self.current_token.type == TK_NLINE:
+            checker.check_advance()
+            self.advance()
         if self.current_token.matches(TK_KEYWORD, 'elif'):
             all_cases = checker.check(self.elif_expr())
             if checker.error: return checker
@@ -573,7 +575,6 @@ class Parser:
             if self.current_token.type == TK_CBR:
                 checker.check_advance()
                 self.advance()
-            #else:
                 
             all_cases = checker.check(self.if_elif_or_else())
             if checker.error: return checker
@@ -763,7 +764,7 @@ class Parser:
     
 
     def term(self):
-        return self.bin_operator(self.factor, (TK_MUL, TK_DIV, TK_PIPE))
+        return self.bin_operator(self.factor, (TK_MUL, TK_DIV, TK_PIPE, TK_MOD))
 
     def arith_expr(self):
         return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))        
