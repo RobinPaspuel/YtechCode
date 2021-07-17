@@ -44,6 +44,7 @@ TK_MINUS        = 'MINUS'
 TK_MUL          = 'MUL'
 TK_DIV          = 'DIV'
 TK_POW          = 'POW'
+TK_MOD          = 'MOD'
 TK_LPAREN       = 'LPAREN'
 TK_RPAREN       = 'RPAREN'
 TK_LSPAREN      = 'LSRAPEN'
@@ -131,6 +132,8 @@ class Lexer:
         while self.current_character != None:
             if self.current_character in ' \t': #Ignoring tab and spaces
                 self.advance()
+            elif self.current_character == "#":
+                self.comment()
             elif self.current_character in ';\n':
                 tokens.append(Token(TK_NLINE, initial_pos = self.pos))
                 self.advance()
@@ -145,6 +148,9 @@ class Lexer:
                 tokens.append(self.make_minus_or_equal())
             elif self.current_character == '*':
                 tokens.append(Token(TK_MUL, initial_pos = self.pos))
+                self.advance()
+            elif self.current_character =="%":
+                tokens.append(Token(TK_MOD, initial_pos = self.pos))
                 self.advance()
             elif self.current_character == '/':
                 tokens.append(Token(TK_DIV,  initial_pos = self.pos))
@@ -308,6 +314,21 @@ class Lexer:
         
         self.advance()
         return Token(TK_STRING, string, initial_pos = initial_pos, final_pos = self.pos)
+
+    def comment(self):
+        self.advance()
+
+        if self.current_character == "!":
+            self.advance()
+            while self.current_character != "#":
+                self.advance()
+        else:
+            while self.current_character != '\n':
+                self.advance()
+        
+        self.advance()
+
+
 
 
 ##### Temporal run function #####
