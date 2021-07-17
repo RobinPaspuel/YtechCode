@@ -675,6 +675,39 @@ class BuiltInFunction(BaseFunction):
         quit()
     execute_exit.arguments_names = []
 
+    def execute_run(self, function_context):
+        filename = function_context.symbol_table.get("filename")
+
+        if not isinstance(filename, String):
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos, 
+                "Filename must be a string",
+                function_context
+            ))
+        filename = filename.value
+
+        try:
+            with open (filename, "r") as f:
+                program = f.read()
+        except Exception as e:
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                f"Failed to open the program \"{filename}\"\n" + str(e),
+                function_context
+            ))
+        _, error = run(filename, program)
+
+        if error:
+            return RunTimeChecker().check_fail(RunTimeError(
+                self.initial_pos, self.final_pos,
+                f"Failed to execute the program \"{filename}\"\n" + error.error_string(),
+                function_context
+            ))
+        return RunTimeChecker.check_pass(Number.null)
+
+    execute_run.arguments_names = ["filename"]
+
+
 BuiltInFunction.print         = BuiltInFunction("print")  
 BuiltInFunction.input         = BuiltInFunction("input")
 BuiltInFunction.number        = BuiltInFunction("number")  
@@ -691,6 +724,7 @@ BuiltInFunction.append        = BuiltInFunction("append")
 BuiltInFunction.pop           = BuiltInFunction("pop")  
 BuiltInFunction.extend        = BuiltInFunction("extend")
 BuiltInFunction.exit          = BuiltInFunction("exit")
+BuiltInFunction.run           = BuiltInFunction("run")
 
 ############## CONTEXT ########################
 		
@@ -996,6 +1030,7 @@ global_symbol_table.set("append", BuiltInFunction.append)
 global_symbol_table.set("pop", BuiltInFunction.pop)
 global_symbol_table.set("extend", BuiltInFunction.extend)
 global_symbol_table.set("exit", BuiltInFunction.exit)
+global_symbol_table.set("run", BuiltInFunction.run)
 
 
 
