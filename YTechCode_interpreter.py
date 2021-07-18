@@ -248,7 +248,7 @@ class Number(Value):
         if self.show_repr:
             return str(self.value)
         else:
-            return f''
+            return str('')
     
 
 Number.null = Number(0, False)
