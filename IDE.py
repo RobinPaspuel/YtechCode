@@ -69,8 +69,7 @@ def open_file():
                 lines += 1
                 linenumbers.config(state = NORMAL)
                 linenumbers.insert(END, f'\n{lines}')
-                linenumbers.config(state = DISABLED)
-                
+                linenumbers.config(state = DISABLED)   
 
 
 def set_file_path(path):
@@ -87,49 +86,34 @@ def line_number(event):
     line = int(line)
     if line >= 1:
         if line < 10:
-            if int(linenumbers.get("end-1c linestart", "end-1c lineend")) != (line+1):
+            if int(linenumbers.get("end-2c linestart", "end-2c lineend")) != (line+1):
                 linenumbers.config(state = NORMAL)
-                linenumbers.insert(END, f'\n{line+1}')
+                linenumbers.insert(END, f'{line+1}\n')
                 linenumbers.config(state = DISABLED)
             else:
                 pass
         elif line >= 10:
             if int(linenumbers.get("end-2c linestart", "end-2c lineend")) != (line+1):
                 linenumbers.config(state = NORMAL)
-                linenumbers.insert(END, f'\n{line+1}')
+                linenumbers.insert(END, f'{line+1}\n')
                 linenumbers.config(state = DISABLED)
-    
+
 def delete_number(event):
-    linenumbers.update()
-    line, column = editor.index('insert').split('.')
-    line = int(line)
-    if line >= 10:
-        line_count = (linenumbers.get("end-3c linestart", "end-3c lineend"))
-        if (int(line_count) - line)>1:
-            to_delete = (int(line_count) - line)*2
-            print(to_delete)
-        else:
-            to_delete = 1
-        if line < int(line_count):
-            linenumbers.config(state = NORMAL)
-            linenumbers.delete(f"end-{2+to_delete}c linestart", END)
-            linenumbers.config(state = DISABLED)
-    else:
-        line_count = (linenumbers.get("end-2c linestart", "end-2c lineend"))
-        if (int(line_count) - line)>1:
-            to_delete = (int(line_count) - line)
-            print(to_delete)
-        else:
-            to_delete = 1
-        if line < int(line_count):
-            linenumbers.config(state = NORMAL)
-            linenumbers.delete(f"end-{1 + to_delete}c linestart", END)
-            linenumbers.config(state = DISABLED)
-    linenumbers.see(END)
-        
+    count = 0
+    text = editor.get("1.0", END)
+    text = list(text)
+    linenumbers.config(state=NORMAL)
+    linenumbers.delete("1.0", END)
+    for element in text:
+        if element == "\n":
+            count += 1
+            linenumbers.insert(END, f"{count}\n")
+    linenumbers.config(state=DISABLED)
+
+    
 def line_one(event):
     linenumbers.config(state  = NORMAL)
-    linenumbers.insert(END, "1")
+    linenumbers.insert(END, "1\n")
     linenumbers.config(state = DISABLED)
 
 def number_lines_for_paste(event):
