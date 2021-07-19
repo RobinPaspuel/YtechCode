@@ -1,13 +1,13 @@
 from tkinter import *
 from tkinter import ttk
-import tkinter
-from ttkthemes import ThemedTk
+from ttkbootstrap import Style
 from tkinter import messagebox
 from tkinter.filedialog import asksaveasfilename, askopenfilename
 import YTechCode_interpreter
 import subprocess
 from datetime import datetime
 import os
+from sys import platform as _platform
 
 
 
@@ -15,9 +15,13 @@ import os
 
 file_path = ''
 ########## GUI CONFIGS ##############
-ide = ThemedTk(theme="breeze")
+#ide = Tk()
+style = Style("superhero")
+ide = style.master
+#ide = ThemedTk(theme="breeze")
 ide.title("YTech Code IDE")
 ide.geometry("1200x720")
+
 
 ############ Line Numbers #################
 
@@ -52,11 +56,22 @@ def save_as():
 
 def open_file():
     path = askopenfilename(filetypes=[('YTech Code Files', '*.ytc')])
+    lines = 1
+    line_count, column = editor.index('insert').split('.')
+    line_count = int(line_count)
     with open(path, 'r') as file:
         code = file.read()
         editor.delete('1.0', END)
         editor.insert('1.0', code)
         set_file_path(path)
+        for line in code:
+            if line == '\n':
+                lines += 1
+                linenumbers.config(state = NORMAL)
+                linenumbers.insert(END, f'\n{lines}')
+                linenumbers.config(state = DISABLED)
+                
+
 
 def set_file_path(path):
     global file_path
@@ -71,84 +86,153 @@ def line_number(event):
     line, column = editor.index('insert').split('.')
     line = int(line)
     if line >= 1:
-        linenumbers.config(state = NORMAL)
-        linenumbers.insert(END, f'\n{line+1}')
-        linenumbers.config(state = DISABLED)
-    global lines
-    lines = line+1
+        if line < 10:
+            if int(linenumbers.get("end-1c linestart", "end-1c lineend")) != (line+1):
+                linenumbers.config(state = NORMAL)
+                linenumbers.insert(END, f'\n{line+1}')
+                linenumbers.config(state = DISABLED)
+            else:
+                pass
+        elif line >= 10:
+            if int(linenumbers.get("end-2c linestart", "end-2c lineend")) != (line+1):
+                linenumbers.config(state = NORMAL)
+                linenumbers.insert(END, f'\n{line+1}')
+                linenumbers.config(state = DISABLED)
     
 def delete_number(event):
-    global lines
+    linenumbers.update()
     line, column = editor.index('insert').split('.')
     line = int(line)
-    line_count = (linenumbers.get("end-3c linestart", "end-3c lineend"))
-    print(str(line_count))
-    print(str(line) + "-" + str(line_count))
-    #print(line)
-    if  line < lines and lines > 10:
-        linenumbers.config(state = NORMAL)
-        linenumbers.delete("end-3c linestart", END)
-        linenumbers.update()
-        linenumbers.config(state = DISABLED)
-        lines = lines-1
-    elif line < int(line_count):
-        linenumbers.config(state = NORMAL)
-        linenumbers.delete("end-3c linestart", END)
-        linenumbers.update()
-        linenumbers.config(state = DISABLED)
-    #print(line_count)
-
+    if line >= 10:
+        line_count = (linenumbers.get("end-3c linestart", "end-3c lineend"))
+        if (int(line_count) - line)>1:
+            to_delete = (int(line_count) - line)*2
+            print(to_delete)
+        else:
+            to_delete = 1
+        if line < int(line_count):
+            linenumbers.config(state = NORMAL)
+            linenumbers.delete(f"end-{2+to_delete}c linestart", END)
+            linenumbers.config(state = DISABLED)
+    else:
+        line_count = (linenumbers.get("end-2c linestart", "end-2c lineend"))
+        if (int(line_count) - line)>1:
+            to_delete = (int(line_count) - line)
+            print(to_delete)
+        else:
+            to_delete = 1
+        if line < int(line_count):
+            linenumbers.config(state = NORMAL)
+            linenumbers.delete(f"end-{1 + to_delete}c linestart", END)
+            linenumbers.config(state = DISABLED)
+    linenumbers.see(END)
+        
 def line_one(event):
     linenumbers.config(state  = NORMAL)
     linenumbers.insert(END, "1")
     linenumbers.config(state = DISABLED)
 
-       
+def number_lines_for_paste(event):
+    clipboard = ide.clipboard_get()
+    lines = 0
+    line_count, column = editor.index('insert').split('.')
+    line_count = int(line_count)
+    for line in clipboard:
+        if line_count:
+            if line_count < 10:
+                insert_number = int(linenumbers.get("end-2c linestart", "end-2c lineend")) 
+                if line == '\n':
+                    insert_number += 1
+                    linenumbers.config(state = NORMAL)
+                    linenumbers.insert(END, f'\n{insert_number}')
+                    linenumbers.config(state = DISABLED)
+            else:
+                insert_number = int(linenumbers.get("end-3c linestart", "end-3c lineend")) + lines
+                if line == '\n':
+                    insert_number +=1
+                    linenumbers.config(state = NORMAL)
+                    linenumbers.insert(END, f'\n{insert_number}')
+                    linenumbers.config(state = DISABLED)
+        else:
+            if line == '\n':
+                lines += 1
+                linenumbers.config(state = NORMAL)
+                linenumbers.insert(END, f'\n{lines}')
+                linenumbers.config(state = DISABLED)
+                
+def scroll_code_and_lines(*args):
+    editor.yview(*args)
+    linenumbers.yview(*args)
 
+def scroll_windows(event):
+    main_frame.yview_scroll(-1*event.delta/120, "units")
+
+def scroll_linux(event):
+    def delta(event):
+        if event.num == 5:
+            return -1
+        return 1
+    linenumbers.yview_scroll(delta(event)*-1, "units")
+    editor.yview_scroll(delta(event), "units")
 ################# GUI ####################
 
 ## Main Frame
-main_frame = LabelFrame(ide, text = "CODE")
+main_frame = ttk.Frame(ide)
 main_frame.grid(row=0, column=2)
 
-output_frame = LabelFrame(ide, text = "OUTPUT")
+output_frame = ttk.Frame(ide)
 output_frame.grid(row=1, column=2)
 ## Shell Frame
-shell_frame = LabelFrame(ide, bg = "green", text = "test")
+shell_frame = ttk.Frame(ide)
 shell_frame.grid(row=0, column=0, rowspan=2)
 
 ## Text Scroll
-text_scroll = Scrollbar(main_frame)
+text_scroll = ttk.Scrollbar(main_frame)
 #text_scroll.grid(row=0, column=1)
-#text_scroll.pack(side=RIGHT, fill=Y)
+text_scroll.pack(side=RIGHT, fill=Y)
 
-output_scroll = Scrollbar(output_frame)
+output_scroll = ttk.Scrollbar(output_frame)
 #text_scroll.grid(row=1, column=1, sticky=NS)
-#output_scroll.pack(side=RIGHT, fill=Y)
+output_scroll.pack(side=RIGHT, fill=Y)
 
 #Setting Text Editor
 
-editor = Text(main_frame, width=97, height=24, font=("Consolas", 11), selectbackground="lightblue", insertbackground=from_rgb((255, 205, 56)), background=from_rgb((22, 51, 72)),fg = "white", undo=True, yscrollcommand=text_scroll.set)
-editor.grid(row=0, column=1)
+editor = Text(main_frame, width=96, height=24, font=("Consolas", 11), bd = 0, selectbackground=from_rgb((0, 62, 135)), insertbackground=from_rgb((255, 205, 56)), background=from_rgb((22, 51, 72)),fg = "white", undo=True, yscrollcommand=text_scroll.set)
+#editor.grid(row=0, column=1)
+editor.pack(side=RIGHT, fill=Y)
 
-linenumbers = Text(main_frame, width=2)
-linenumbers.config(font=("Consolas", 11))
+linenumbers = Text(main_frame, width=3, font=("Consolas", 11), background=from_rgb((15, 47, 64)), fg =from_rgb((147, 152, 154)),bd = 0,yscrollcommand=text_scroll.set)
 linenumbers.tag_configure('line', justify='right')
 editor.bind("<Visibility>", line_one)
 editor.bind("<Return>", line_number)
 editor.bind("<BackSpace>", delete_number)
-linenumbers.grid(row=0, column=0, sticky=NS)
+editor.bind("<Control-v>", number_lines_for_paste)
+editor.bind("<Control-z>", delete_number)
+##Mouse wheel
+if _platform.startswith('linux'):
+    editor.bind("<Button-4>", scroll_linux)
+    editor.bind("<Button-5>", scroll_linux)
+    linenumbers.bind("<Button-4>", scroll_linux)
+    linenumbers.bind("<Button-5>", scroll_linux)
+else:
+    editor.bind("<MouseWheel>", scroll_windows)
+    linenumbers.bind("<MouseWheel>", scroll_windows)
+
+
+linenumbers.pack(side=LEFT, fill=Y)
+#linenumbers.grid(row=0, column=0, sticky=NS)
 
 
 
 code_output = Text(output_frame, width=100, height=13, font=("Consolas", 11), selectbackground="lightblue", selectforeground="black", background=from_rgb((16, 37, 55)),fg = "white", yscrollcommand=output_scroll.set)
-code_output.grid()
+#code_output.grid()
+code_output.pack()
 
 test = Text(shell_frame, width=20, height=40, font=("Helvetica", 12), selectbackground="lightblue", selectforeground="black")
-test.grid()
+test.pack()
 
 #Configure scrollbar
-text_scroll.config(command = editor.yview)
+text_scroll.config(command = scroll_code_and_lines)
 output_scroll.config(command = code_output.yview)
 
 menu_bar = Menu(ide)
@@ -157,6 +241,7 @@ file_menu = Menu(menu_bar, tearoff=0)
 file_menu.add_command(label = "Open", command=open_file)
 file_menu.add_command(label = "Save", command=save_as)
 file_menu.add_command(label = "Save as", command=save_as)
+file_menu.add_separator()
 file_menu.add_command(label = "Exit", command=exit)
 menu_bar.add_cascade(label = "File", menu=file_menu)
 
@@ -166,7 +251,7 @@ menu_bar.add_cascade(label = "Run", menu=run_button)
 
 
 ############# MAIM LOOP ###############
-
 ide.config(menu = menu_bar)
+ide.configure(bg = from_rgb((12, 40, 55)), bd = 0)
 
 ide.mainloop()
