@@ -1,0 +1,6 @@
+let b = 0
+let c = 20
+while b<c {
+	print(b)
+	let b = b+1
+}
