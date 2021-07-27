@@ -3,7 +3,7 @@ from tkinter import ttk
 from ttkbootstrap import Style
 from tkinter import messagebox
 from tkinter.filedialog import asksaveasfilename, askopenfilename
-import YTechCode_interpreter
+from run_ide import run_shell
 import subprocess
 from datetime import datetime
 import os
@@ -38,7 +38,7 @@ def run():
         output, error = process.communicate()
         code_output.insert(END, output)
         code_output.insert(END, error)
-        code_output.insert(END, f'---------------YTech Code---------------({now.year}-{now.month}-{now.day}|{now_time.hour}:{now_time.minute}:{now_time.second})\n')
+        code_output.insert(END, (35*"-") + "Tech Code" + (35*"-") + f'({now.year}-{now.month}-{now.day}|{now_time.hour}:{now_time.minute}:{now_time.second})\n')
         code_output.see(END)
         code_output.config(state=DISABLED)
         code_output.bind("<1>", lambda event: code_output.focus_set())
@@ -76,6 +76,8 @@ def set_file_path(path):
     global file_path
     file_path = path
 
+def shell_Test():
+    subprocess.call(['gnome-terminal', '-e', '/bin/bash -c "cd ~/YtechCode; python3 YtechShell.py" '])  
 
 def from_rgb(rgb):
     r, g, b  = rgb
@@ -232,6 +234,10 @@ menu_bar.add_cascade(label = "File", menu=file_menu)
 run_button = Menu(menu_bar, tearoff=0)
 run_button.add_command(label = "Run", command=run)
 menu_bar.add_cascade(label = "Run", menu=run_button)
+
+shell = Menu(menu_bar, tearoff=0)
+shell.add_command(label = "Run Shell", command=shell_Test)
+menu_bar.add_cascade(label = "Run Shell", menu=shell)
 
 
 ############# MAIM LOOP ###############

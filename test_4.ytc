@@ -1,6 +1,13 @@
-let b = 0
-let c = 20
-while b<c {
+let a = 0
+let b = 1
+let c = "test"
+
+if (a==b){
+	print(a)
+}
+elif (a<b){
+	print(c)
+}
+else {
 	print(b)
-	let b = b+1
 }

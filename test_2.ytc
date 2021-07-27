@@ -1,16 +1,1 @@
-def zero(a, b){
-return (a/b)
-}
-
-print(zero(6, 3))
-
-
-
-
-
-
-
-
-
-
 
