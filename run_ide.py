@@ -14,7 +14,7 @@ def run_ide(filename):
             pass
 
 def run_shell():
-    welcome_message = """YTech Code 0.3.1  Built of: Jul 9, 2021
+    welcome_message = """YTech Code 0.3.3  Built of: Jul 26, 2021
     License: MIT\n """
     print(welcome_message)
     while True:
