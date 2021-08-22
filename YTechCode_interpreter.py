@@ -137,7 +137,7 @@ class Value:
 
 class Number(Value):
     
-    def __init__(self, value, show_repr=False):
+    def __init__(self, value, show_repr=True):
         super().__init__()
         self.value = value
         self.show_repr = show_repr
@@ -323,6 +323,30 @@ class String(Value):
                     return String(string_diff).set_context(self.context), None
             
             
+    def div_by(self, other):
+        if isinstance(other, String):
+            if self.value == other.value or (len(self.value)!=(len(other.value))):
+                return None, Value.illegal_operation(self, other)
+            else:
+                self_array = []
+                other_array = []
+                string_diff =[]
+                separator = ''
+                for letter in self.value:
+                    self_array.append(letter)
+                for letter in other.value:
+                    other_array.append(letter)
+                for i in range(len(self_array)):
+                    if self_array[i] == other_array[i]:
+                        string_diff.append(self_array[i])
+                    else:
+                        pass
+                if len(string_diff)==0:
+                    return None, Value.illegal_operation(self, other)
+                else:
+                    string_diff = separator.join(string_diff)
+                    return String(string_diff).set_context(self.context), None
+            
             
     def is_true(self):
         return len(self.value) > 0
@@ -343,7 +367,7 @@ class String(Value):
 
 ################ LIST CLASS ####################
 class List(Value):
-    def __init__(self, list_elements, show_elements):
+    def __init__(self, list_elements, show_elements=True):
         super().__init__()
         self.list_elements = list_elements
         self.show_elements = show_elements

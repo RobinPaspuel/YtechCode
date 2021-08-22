@@ -1,5 +1,4 @@
 # This is the first program written in Ytech Code
-
 def fizz_buzz(num_iter){
     for i=1:num_iter{
         if(i%3 == 0 and i%5 ==0){

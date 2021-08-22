@@ -11,7 +11,7 @@ while True:
         result, error = YTechCode_interpreter.run('<stdin>',string)
         if error: print(error.error_string())
         elif result: 
-            if len(result.list_elements) ==1:
+            if len(result.list_elements) == 1:
                 print(repr(result.list_elements[0]))
             else:
                 print(repr(result))
