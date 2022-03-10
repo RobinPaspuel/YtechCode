@@ -39,5 +39,5 @@ To initialize the IDE run:
 ```bash
 $ python3 IDE.py
 ```
-The current version of YTechCode is 0.3.3, new verion will be released from the current repository.
+The current version of YTechCode is 0.3.3, new versions will be released from the current repository.
 
