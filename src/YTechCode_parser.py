@@ -1,6 +1,7 @@
-from YTechCode_lexer import *
+from src.YTechCode_lexer import *
 
 ##### DEFINING NODES ########
+
 
 class Node_number:
     def __init__(self, token):
@@ -10,7 +11,8 @@ class Node_number:
 
     def __repr__(self):
         return f'{self.token}'
-    
+
+
 class Node_string:
     def __init__(self, token):
         self.token = token
@@ -20,12 +22,13 @@ class Node_string:
     def __repr__(self):
         return f'{self.token}'
 
+
 class Node_list:
     def __init__(self, node_elements, initial_pos, final_pos):
         self.node_elements = node_elements
         self.initial_pos = initial_pos
         self.final_pos = final_pos
-        
+
 
 class Node_VarDeclare:
     def __init__(self, variable_name_token):
@@ -34,6 +37,7 @@ class Node_VarDeclare:
         self.initial_pos = self.variable_name_token.initial_pos
         self.final_pos = self.variable_name_token.final_pos
 
+
 class Node_VarAssign:
     def __init__(self, variable_name_token, value_node):
         self.variable_name_token = variable_name_token
@@ -41,9 +45,10 @@ class Node_VarAssign:
 
         self.initial_pos = self.variable_name_token.initial_pos
         self.final_pos = self.value_node.final_pos
-        
+
     def __repr__(self):
         return f'VARIABLE: {self.variable_name_token.value}: {self.value_node}'
+
 
 class Node_Binary_op:
     def __init__(self, left_node, operator_token, right_node):
@@ -57,6 +62,7 @@ class Node_Binary_op:
     def __repr__(self):
         return f'({self.left_node}, {self.operator_token}, {self.right_node})'
 
+
 class Node_Unitary_op:
     def __init__(self, operator_token, node):
         self.operator_token = operator_token
@@ -68,19 +74,23 @@ class Node_Unitary_op:
     def __repr__(self):
         return f'({self.operator_token}, {self.node})'
 
+
 class Node_If:
     def __init__(self, if_elifs, else_case):
         self.if_elifs = if_elifs
         self.else_case = else_case
 
         self.initial_pos = self.if_elifs[0][0].initial_pos
-        self.final_pos = (self.else_case or self.if_elifs[len(self.if_elifs)-1])[0].final_pos
+        self.final_pos = (
+            self.else_case or self.if_elifs[len(self.if_elifs)-1])[0].final_pos
 
     def __repr__(self):
-        if len(self.if_elifs)==1:
+        if len(self.if_elifs) == 1:
             return f'CONDITIONAL: ({self.if_elifs}), ELSE: ({self.else_case})'
         else:
             return f'CONDITIONALS: ({self.if_elifs}), ELSE: ({self.else_case})'
+
+
 class Node_For:
     def __init__(self, variable_name_token, node_start_value, node_final_value, node_step_value, node_body, return_null):
         self.variable_name_token = variable_name_token
@@ -96,6 +106,7 @@ class Node_For:
     def __repr__(self):
         return f"LOOP: FOR ({self.variable_name_token} = {self.node_start_value} : {self.node_final_value} : {self.node_step_value}) {'{'} {self.node_body} {'}'}"
 
+
 class Node_While:
     def __init__(self, node_condition, node_body, return_null):
         self.node_condition = node_condition
@@ -108,6 +119,7 @@ class Node_While:
     def __repr__(self):
         return f"LOOP: WHILE ({self.node_condition}) {'{'}{self.node_body} {'}'}"
 
+
 class Node_Def_function:
     def __init__(self, variable_name_token, arguments_token, node_body, return_self_value):
         self.variable_name_token = variable_name_token
@@ -119,8 +131,9 @@ class Node_Def_function:
         self.final_pos = self.node_body.final_pos
 
     def __repr__(self):
-        return f'FUNCTION: {self.variable_name_token.value}'   
-        
+        return f'FUNCTION: {self.variable_name_token.value}'
+
+
 class Node_call_func:
     def __init__(self, call_to_node, node_args):
         self.call_to_node = call_to_node
@@ -133,6 +146,7 @@ class Node_call_func:
         else:
             self.final_pos = self.call_to_node.final_pos
 
+
 class Node_return:
     def __init__(self, return_node, initial_pos, final_pos):
         self.return_node = return_node
@@ -140,10 +154,12 @@ class Node_return:
         self.initial_pos = initial_pos
         self.final_pos = final_pos
 
+
 class Node_next:
     def __init__(self, initial_pos, final_pos):
         self.initial_pos = initial_pos
         self.final_pos = final_pos
+
 
 class Node_break:
     def __init__(self, initial_pos, final_pos):
@@ -152,10 +168,11 @@ class Node_break:
 
 ########## PARSER CHECKER ##############
 
+
 class ParserChecker:
     def __init__(self):
         self.error = None
-        self.node  = None
+        self.node = None
         self.advance_step = 0
         self.last_registered_advance_count = 0
         self.to_reverse_count = 0
@@ -164,13 +181,13 @@ class ParserChecker:
         self.last_registered_advance_count = 1
         self.advance_step += 1
 
-
     def check(self, result):
         self.last_registered_advance_count = result.advance_step
         self.advance_step += result.advance_step
-        if result.error: self.error = result.error
+        if result.error:
+            self.error = result.error
         return result.node
-        
+
     def try_check(self, result):
         if result.error:
             self.to_reverse_count = result.advance_step
@@ -188,6 +205,7 @@ class ParserChecker:
 
 ######## PARSER ##########
 
+
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -196,7 +214,7 @@ class Parser:
 
     def advance(self, ):
         self.token_index += 1
-        self.update_current_token()   
+        self.update_current_token()
         return self.current_token
 
     def reverse(self, amount=1):
@@ -210,7 +228,7 @@ class Parser:
 
     def parse(self):
         result = self.statements()
-        if not result.error and self.current_token.type !=  TK_EOF:
+        if not result.error and self.current_token.type != TK_EOF:
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected '+', '-', '*' or '/' in -> "
@@ -263,14 +281,13 @@ class Parser:
                 arguments_token.append(self.current_token)
                 checker.check_advance()
                 self.advance()
-            
+
             if self.current_token.type != TK_RPAREN:
                 return checker.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
                     f"Expected ',' or ')' in -> "
                 ))
-            
-        
+
         else:
             if self.current_token.type != TK_RPAREN:
                 return checker.check_fail(InvalidSyntax(
@@ -278,7 +295,7 @@ class Parser:
                     f"Expecet a parameter or ')' in -> "
                 ))
         checker.check_advance()
-        self.advance() 
+        self.advance()
 
         if self.current_token.type != TK_CBL:
             return checker.check_fail(InvalidSyntax(
@@ -293,21 +310,23 @@ class Parser:
             self.advance()
 
             return_node = checker.check(self.statements())
-            if checker.error: return checker
+            if checker.error:
+                return checker
 
             if self.current_token.type != TK_CBR:
                 return checker.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
                     "Expected '}' in -> "
                 ))
-                
+
             checker.check_advance()
             self.advance()
 
             return checker.check_pass(Node_Def_function(variable_name, arguments_token, return_node, False))
 
         return_node = checker.check(self.expr())
-        if checker.error: return checker
+        if checker.error:
+            return checker
 
         if self.current_token.type != TK_CBR:
             return checker.check_fail(InvalidSyntax(
@@ -318,7 +337,6 @@ class Parser:
         self.advance()
 
         return checker.check_pass(Node_Def_function(variable_name, arguments_token, return_node, True))
-       
 
     def for_statement(self):
         checker = ParserChecker()
@@ -337,7 +355,7 @@ class Parser:
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected a variable to iterate in -> "
             ))
-        
+
         variable_name = self.current_token
         checker.check_advance()
         self.advance()
@@ -347,31 +365,34 @@ class Parser:
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected '=' in -> "
             ))
-        
+
         checker.check_advance()
         self.advance()
 
         start_value = checker.check(self.expr())
-        if checker.error: return checker
+        if checker.error:
+            return checker
 
         if self.current_token.type != TK_COLON:
             return checker.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected ':' in -> "
             ))
-        
+
         checker.check_advance()
         self.advance()
 
         final_value = checker.check(self.expr())
-        if checker.error: return checker
+        if checker.error:
+            return checker
 
         if self.current_token.type == TK_COLON:
             checker.check_advance()
             self.advance()
 
             step_value = checker.check(self.expr())
-            if checker.error: return checker
+            if checker.error:
+                return checker
         else:
             step_value = None
 
@@ -380,7 +401,7 @@ class Parser:
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected {'{'} in -> "
             ))
-        
+
         checker.check_advance()
         self.advance()
 
@@ -389,7 +410,8 @@ class Parser:
             self.advance()
 
             body = checker.check(self.statements())
-            if checker.error: return checker
+            if checker.error:
+                return checker
 
             if self.current_token.type != TK_CBR:
                 return checker.check_fail(InvalidSyntax(
@@ -398,17 +420,18 @@ class Parser:
                 ))
             checker.check_advance()
             self.advance()
-            
-            return checker.check_pass(Node_For(variable_name, start_value, final_value, step_value, body, True))
-        
-        body = checker.check(self.statement())
-        if checker.error: return checker
 
-        if not self.current_token.type ==TK_CBR:
+            return checker.check_pass(Node_For(variable_name, start_value, final_value, step_value, body, True))
+
+        body = checker.check(self.statement())
+        if checker.error:
+            return checker
+
+        if not self.current_token.type == TK_CBR:
             return checker.check_fail(InvalidSyntax(
-                    self.current_token.initial_pos, self.current_token.final_pos,
-                    f"Expected {'}'} in -> '"
-                ))
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'}'} in -> '"
+            ))
         checker.check_advance()
         self.advance()
 
@@ -427,7 +450,8 @@ class Parser:
         self.advance()
 
         node_condition = checker.check(self.expr())
-        if checker.error: return checker
+        if checker.error:
+            return checker
 
         if self.current_token.type != TK_CBL:
             return checker.check_fail(InvalidSyntax(
@@ -442,7 +466,8 @@ class Parser:
             self.advance()
 
             body = checker.check(self.statements())
-            if checker.error: return checker
+            if checker.error:
+                return checker
 
             if self.current_token.type != TK_CBR:
                 return checker.check_fail(InvalidSyntax(
@@ -452,15 +477,16 @@ class Parser:
             checker.check_advance()
             self.advance()
             return checker.check_pass(Node_While(node_condition, body, True))
-        
-        body = checker.check(self.statement())
-        if checker.error: return checker
 
-        if not self.current_token.type ==TK_CBR:
+        body = checker.check(self.statement())
+        if checker.error:
+            return checker
+
+        if not self.current_token.type == TK_CBR:
             return checker.check_fail(InvalidSyntax(
-                    self.current_token.initial_pos, self.current_token.final_pos,
-                    f"Expected {'}'} in -> '"
-                ))
+                self.current_token.initial_pos, self.current_token.final_pos,
+                f"Expected {'}'} in -> '"
+            ))
         checker.check_advance()
         self.advance()
 
@@ -469,7 +495,8 @@ class Parser:
     def if_statement(self):
         checker = ParserChecker()
         all_cases = checker.check(self.if_stmt_cases('if'))
-        if checker.error: return checker
+        if checker.error:
+            return checker
         cases, else_case = all_cases
         return checker.check_pass(Node_If(cases, else_case))
 
@@ -486,9 +513,9 @@ class Parser:
 
             if not self.current_token.type == TK_CBL:
                 return checker.check_fail(InvalidSyntax(
-                            self.current_token.initial_pos, self.current_token.final_pos,
-                            f"Expected {'{'} in -> "
-                        ))
+                    self.current_token.initial_pos, self.current_token.final_pos,
+                    f"Expected {'{'} in -> "
+                ))
             checker.check_advance()
             self.advance()
 
@@ -497,10 +524,11 @@ class Parser:
                 self.advance()
 
                 statements = checker.check(self.statements())
-                if checker.error: return checker
+                if checker.error:
+                    return checker
                 else_case = (statements, True)
 
-                if self.current_token.type== TK_CBR:
+                if self.current_token.type == TK_CBR:
                     checker.check_advance()
                     self.advance()
                 else:
@@ -509,9 +537,10 @@ class Parser:
                         f"Expected {'}'} in -> "
                     ))
             else:
-                
+
                 expr = checker.check(self.statement())
-                if checker.error: return checker
+                if checker.error:
+                    return checker
                 else_case = (expr, False)
 
                 if not self.current_token.type == TK_CBR:
@@ -525,19 +554,21 @@ class Parser:
         return checker.check_pass(else_case)
 
     def if_elif_or_else(self):
-        checker=ParserChecker()
+        checker = ParserChecker()
         cases, else_case = [], None
         if self.current_token.type == TK_NLINE:
             checker.check_advance()
             self.advance()
         if self.current_token.matches(TK_KEYWORD, 'elif'):
             all_cases = checker.check(self.elif_expr())
-            if checker.error: return checker
+            if checker.error:
+                return checker
             cases, else_case = all_cases
         else:
             else_case = checker.check(self.else_expr())
-            if checker.error: return checker
-    
+            if checker.error:
+                return checker
+
         return checker.check_pass((cases, else_case))
 
     def if_stmt_cases(self, key_word):
@@ -554,7 +585,8 @@ class Parser:
         self.advance()
 
         initial_cond = checker.check(self.expr())
-        if checker.error: return checker
+        if checker.error:
+            return checker
 
         if not self.current_token.type == TK_CBL:
             return checker.check_fail(InvalidSyntax(
@@ -569,22 +601,24 @@ class Parser:
             self.advance()
 
             statements = checker.check(self.statements())
-            if checker.error: return checker
+            if checker.error:
+                return checker
             cases.append((initial_cond, statements, True))
 
             if self.current_token.type == TK_CBR:
                 checker.check_advance()
                 self.advance()
-                
+
             all_cases = checker.check(self.if_elif_or_else())
-            if checker.error: return checker
+            if checker.error:
+                return checker
             new_cases, else_case = all_cases
             cases.extend(new_cases)
 
-
         else:
             expr = checker.check(self.statement())
-            if checker.error: return checker
+            if checker.error:
+                return checker
             cases.append((initial_cond, expr, False))
 
             if not self.current_token.type == TK_CBR:
@@ -596,32 +630,32 @@ class Parser:
             self.advance()
 
             all_cases = checker.check(self.if_elif_or_else())
-            if checker.error: return checker
+            if checker.error:
+                return checker
             new_cases, else_case = all_cases
             cases.extend(new_cases)
 
         return checker.check_pass((cases, else_case))
 
-
     def list_stmt(self):
         checker = ParserChecker()
         node_elements = []
         initial_pos = self.current_token.initial_pos.copy()
-        
+
         if self.current_token.type != TK_LSPAREN:
             return checker.check_fail(InvalidSyntax(
-                self.current_token.initial_pos, self.current_token.final_pos, 
+                self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected '[' in -> "
             ))
         checker.check_advance()
         self.advance()
-        
+
         if self.current_token.type == TK_RSPAREN:
             checker.check_advance()
             self.advance()
         else:
-            node_elements.append(checker.check(self.expr())) 
-            if checker.error: 
+            node_elements.append(checker.check(self.expr()))
+            if checker.error:
                 return checker.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
                     f"Expected ']', 'LET or let', while-loop, for-loop, INT, FLOAT, IDENTIFIER in  -> "
@@ -631,8 +665,9 @@ class Parser:
                 self.advance()
 
                 node_elements.append(checker.check(self.expr()))
-                if checker.error: return checker
-                
+                if checker.error:
+                    return checker
+
             if self.current_token.type != TK_RSPAREN:
                 return checker.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
@@ -640,10 +675,8 @@ class Parser:
                 ))
             checker.check_advance()
             self.advance()
-        
+
         return checker.check_pass(Node_list(node_elements, initial_pos, self.current_token.final_pos.copy()))
-            
-        
 
     def atom(self):
         result = ParserChecker()
@@ -653,7 +686,7 @@ class Parser:
             result.check_advance()
             self.advance()
             return result.check_pass(Node_number(token))
-        
+
         elif token.type == TK_STRING:
             result.check_advance()
             self.advance()
@@ -668,40 +701,46 @@ class Parser:
             result.check_advance()
             self.advance()
             expr = result.check(self.expr())
-            if result.error: return result
+            if result.error:
+                return result
             if self.current_token.type == TK_RPAREN:
                 result.check_advance()
                 self.advance()
                 return result.check_pass(expr)
-            else: 
+            else:
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
                     f"Expected ')' in -> "
                 ))
-                
+
         elif token.type == TK_LSPAREN:
             list_stmt = result.check(self.list_stmt())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(list_stmt)
 
         elif (token.matches(TK_KEYWORD, 'IF')) or (token.matches(TK_KEYWORD, 'if')):
             if_statement = result.check(self.if_statement())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(if_statement)
 
         elif (token.matches(TK_KEYWORD, 'FOR')) or (token.matches(TK_KEYWORD, 'for')):
             for_statement = result.check(self.for_statement())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(for_statement)
 
         elif (token.matches(TK_KEYWORD, 'WHILE')) or (token.matches(TK_KEYWORD, 'while')):
             while_statement = result.check(self.while_statement())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(while_statement)
 
         elif (token.matches(TK_KEYWORD, 'DEF')) or (token.matches(TK_KEYWORD, 'def')):
             function_name = result.check(self.def_func())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(function_name)
 
         return result.check_fail(InvalidSyntax(
@@ -712,8 +751,9 @@ class Parser:
     def call_func(self):
         checker = ParserChecker()
         atom = checker.check(self.atom())
-        if checker.error: return checker
-        
+        if checker.error:
+            return checker
+
         if self.current_token.type == TK_LPAREN:
             checker.check_advance()
             self.advance()
@@ -723,8 +763,8 @@ class Parser:
                 checker.check_advance()
                 self.advance()
             else:
-                arguments_nodes.append(checker.check(self.expr())) 
-                if checker.error: 
+                arguments_nodes.append(checker.check(self.expr()))
+                if checker.error:
                     return checker.check_fail(InvalidSyntax(
                         self.current_token.initial_pos, self.current_token.final_pos,
                         f"Expected ')', 'LET or let', while-loop, for-loop, INT, FLOAT, IDENTIFIER in  -> "
@@ -734,8 +774,9 @@ class Parser:
                     self.advance()
 
                     arguments_nodes.append(checker.check(self.expr()))
-                    if checker.error: return checker
-                
+                    if checker.error:
+                        return checker
+
                 if self.current_token.type != TK_RPAREN:
                     return checker.check_fail(InvalidSyntax(
                         self.current_token.initial_pos, self.current_token.final_pos,
@@ -745,7 +786,7 @@ class Parser:
                 self.advance()
             return checker.check_pass(Node_call_func(atom, arguments_nodes))
         return checker.check_pass(atom)
-    
+
     def power(self):
         return self.bin_operator(self.call_func, (TK_POW, ), self.factor)
 
@@ -757,17 +798,17 @@ class Parser:
             result.check_advance()
             self.advance()
             factor = result.check(self.factor())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(Node_Unitary_op(token, factor))
 
         return self.power()
-    
 
     def term(self):
         return self.bin_operator(self.factor, (TK_MUL, TK_DIV, TK_PIPE, TK_MOD))
 
     def arith_expr(self):
-        return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))        
+        return self.bin_operator(self.term, (TK_PLUS, TK_MINUS))
 
     def comparison_expr(self):
         checker = ParserChecker()
@@ -777,10 +818,12 @@ class Parser:
             checker.check_advance()
             self.advance()
             node = checker.check(self.comparison_expr())
-            if checker.error: return checker
+            if checker.error:
+                return checker
             return checker.check_pass(Node_Unitary_op(relation_token, node))
-        node = checker.check(self.bin_operator(self.arith_expr, (TK_DEQ, TK_NDEQ, TK_LL, TK_GG, TK_LEQ, TK_GEQ)))
-        if checker.error: 
+        node = checker.check(self.bin_operator(
+            self.arith_expr, (TK_DEQ, TK_NDEQ, TK_LL, TK_GG, TK_LEQ, TK_GEQ)))
+        if checker.error:
             return checker.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected INT, FLOAT, IDENTIFIER,  '+', '-', '(', '[' or 'NOT' in -> "
@@ -800,7 +843,7 @@ class Parser:
             variable_name = self.current_token
             result.check_advance()
             self.advance()
-        
+
             if self.current_token.type != TK_EQUALS:
                 return result.check_fail(InvalidSyntax(
                     self.current_token.initial_pos, self.current_token.final_pos,
@@ -809,12 +852,13 @@ class Parser:
             result.check_advance()
             self.advance()
             expr = result.check(self.expr())
-            if result.error: return result
+            if result.error:
+                return result
             return result.check_pass(Node_VarAssign(variable_name, expr))
 
-        node = result.check(self.bin_operator(self.comparison_expr, ((TK_KEYWORD, "AND"), (TK_KEYWORD, "OR"), 
-                                                                    (TK_KEYWORD, "and"), (TK_KEYWORD, "or"))))
-        if result.error: 
+        node = result.check(self.bin_operator(self.comparison_expr, ((TK_KEYWORD, "AND"), (TK_KEYWORD, "OR"),
+                                                                     (TK_KEYWORD, "and"), (TK_KEYWORD, "or"))))
+        if result.error:
             return result.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected 'LET or let', INT, FLOAT, IDENTIFIER, '+', '-', '(', or '[' in -> "
@@ -826,15 +870,17 @@ class Parser:
             function_two = function_one
         result = ParserChecker()
         left_side = result.check(function_one())
-        if result.error: return result
+        if result.error:
+            return result
 
         while self.current_token.type in operators or (self.current_token.type, self.current_token.value) in operators:
             operation_token = self.current_token
             result.check_advance()
             self.advance()
             right_side = result.check(function_two())
-            if result.error: return result
-            left_side = Node_Binary_op(left_side,operation_token, right_side)
+            if result.error:
+                return result
+            left_side = Node_Binary_op(left_side, operation_token, right_side)
         return result.check_pass(left_side)
 
     def statement(self):
@@ -856,12 +902,12 @@ class Parser:
             return checker.check_pass(Node_next(initial_pos, self.current_token.initial_pos.copy()))
 
         if self.current_token.matches(TK_KEYWORD, 'break'):
-                    checker.check_advance()
-                    self.advance()
-                    return checker.check_pass(Node_break(initial_pos, self.current_token.initial_pos.copy()))
+            checker.check_advance()
+            self.advance()
+            return checker.check_pass(Node_break(initial_pos, self.current_token.initial_pos.copy()))
 
         expr = checker.check(self.expr())
-        if checker.error: 
+        if checker.error:
             return checker.check_fail(InvalidSyntax(
                 self.current_token.initial_pos, self.current_token.final_pos,
                 f"Expected 'return', 'continue', 'break', 'let', INT, FLOAT, IDENTIFIER, '+', '-', '(', or '[' in -> "
@@ -879,7 +925,8 @@ class Parser:
             self.advance()
 
         statement = checker.check(self.statement())
-        if checker.error: return checker
+        if checker.error:
+            return checker
         statements.append(statement)
 
         more_statemets = True
@@ -893,7 +940,8 @@ class Parser:
             if nlines_count == 0:
                 more_statemets = False
 
-            if not more_statemets: break
+            if not more_statemets:
+                break
             statement = checker.try_check(self.statement())
             if not statement:
                 self.reverse(checker.to_reverse_count)
@@ -906,14 +954,15 @@ class Parser:
         ))
 
 
-def parser_run(filename, text):
-		# Generate tokens
-		lexer = Lexer(filename, text)
-		tokens, error = lexer.create_tokens()
-		if error: return None, error
-		
-		# Generate AST
-		parser = Parser(tokens)
-		ast = parser.parse()
+def run(filename, text):
+    # Generate tokens
+    lexer = Lexer(filename, text)
+    tokens, error = lexer.create_tokens()
+    if error:
+        return None, error
 
-		return ast.node, ast.error
+    # Generate AST
+    parser = Parser(tokens)
+    ast = parser.parse()
+
+    return ast.node, ast.error

@@ -1,4 +1,4 @@
-from error_handlrer import *
+from utils.error_handlrer import *
 import string
 
 ###################################
@@ -333,7 +333,7 @@ class Lexer:
 
 ##### Temporal run function #####
 
-def lexer_run(filename, text):
+def run(filename, text):
     lexer = Lexer(filename, text)
     tokens, error = lexer.create_tokens()
 

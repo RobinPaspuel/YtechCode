@@ -1,4 +1,4 @@
-import YTechCode_interpreter
+import src.YTechCode_interpreter as YTechCode_interpreter
 import os
 
 

@@ -1,5 +1,5 @@
-from YTechCode_lexer import *
-from YTechCode_parser import *
+from src.YTechCode_lexer import *
+from src.YTechCode_parser import *
 import os
 import math
 ############### RUN TIME CHECKER ##############
